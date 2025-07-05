@@ -1,0 +1,70 @@
+# Node modules (both client and server)
+node_modules/
+client/node_modules/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# dotenv environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build output
+/build
+client/build
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# IDE specific
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Coverage directory used by testing tools
+coverage/
+
+# Optional npm cache directory
+.npm
+
+# Debug folder
+debug/
+
+# Compiled source #
+dist/
+tmp/
+
+# Optional eslint cache
+.eslintcache
+
+# Misc
+*.tgz
+*.gz
+*.zip
+*.tar
+
+# React specific
+client/.env.development
+client/.env.production
+client/.env.test
+
+# Bower
+bower_components
+
+# TypeScript
+*.tsbuildinfo
+# Ignore node modules and caches
+node_modules/
+.cache/
+*.pack
