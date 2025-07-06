@@ -14,7 +14,9 @@ router.post('/', [
   body('items').isArray({ min: 1 }).withMessage('At least one item is required'),
   body('items.*.product').isMongoId().withMessage('Valid product ID is required'),
   body('items.*.quantity').isInt({ min: 1 }).withMessage('Quantity must be at least 1'),
-  body('rentalDays').isInt({ min: 1 }).withMessage('Rental days must be at least 1')
+  body('rentalDays').isInt({ min: 1 }).withMessage('Rental days must be at least 1'),
+  body('deliveryAddress').notEmpty().withMessage('Delivery address is required'),
+  body('paymentMethod').isIn(['cash', 'card', 'upi', 'netbanking']).withMessage('Invalid payment method')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -22,7 +24,7 @@ router.post('/', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { items, rentalDays, notes } = req.body;
+    const { items, rentalDays, notes, deliveryAddress, deliveryInstructions, paymentMethod } = req.body;
     let totalAmount = 0;
     const orderItems = [];
 
@@ -71,6 +73,9 @@ router.post('/', [
       rentalDays,
       startDate,
       expectedReturnDate,
+      deliveryAddress,
+      deliveryInstructions,
+      paymentMethod,
       notes
     });
 
@@ -215,6 +220,56 @@ router.put('/:id/return', protect, async (req, res) => {
   }
 });
 
+// @route   PUT /api/orders/:id/cancel
+// @desc    Cancel order (User only, within 10 minutes)
+// @access  Private
+router.put('/:id/cancel', protect, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id)
+      .populate('items.product');
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Check if user owns this order
+    if (order.user.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorized to cancel this order' });
+    }
+
+    // Check if order can be cancelled
+    if (!order.canBeCancelled) {
+      return res.status(400).json({ 
+        message: 'Order cannot be cancelled. Orders can only be cancelled within 10 minutes of placement and must be in pending status.',
+        remainingTime: order.remainingCancelTime
+      });
+    }
+
+    // Update order status and set cancelled by user
+    order.status = 'cancelled';
+    order.cancelledBy = 'user';
+    await order.save();
+
+    // Return items to inventory
+    for (const item of order.items) {
+      const product = await Product.findById(item.product._id);
+      if (product) {
+        product.availableQuantity += item.quantity;
+        await product.save();
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Order cancelled successfully',
+      data: order
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // @route   PUT /api/orders/:id/status
 // @desc    Update order status (Admin only)
 // @access  Private/Admin
@@ -237,6 +292,9 @@ router.put('/:id/status', [
     }
 
     order.status = req.body.status;
+    if (req.body.status === 'cancelled') {
+      order.cancelledBy = 'admin';
+    }
     await order.save();
 
     res.json({

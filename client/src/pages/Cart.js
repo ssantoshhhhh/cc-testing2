@@ -11,7 +11,6 @@ const Cart = () => {
   const handleQuantityChange = (productId, newQuantity) => {
     if (newQuantity < 1) {
       removeFromCart(productId);
-      toast.success('Item removed from cart');
     } else {
       updateQuantity(productId, newQuantity);
     }
@@ -19,7 +18,6 @@ const Cart = () => {
 
   const handleRemoveItem = (productId) => {
     removeFromCart(productId);
-    toast.success('Item removed from cart');
   };
 
   const handleRentalDaysChange = (productId, newRentalDays) => {

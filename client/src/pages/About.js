@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom';
 import { FaUsers, FaShieldAlt, FaClock, FaStar, FaGraduationCap, FaTools } from 'react-icons/fa';
 import { useQuery } from 'react-query';
 import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
 
 const About = () => {
+  const { isAuthenticated } = useAuth();
   // Fetch public statistics from the database
   const { data: statsData, isLoading: statsLoading } = useQuery(
     'about-stats',
@@ -66,21 +68,21 @@ const About = () => {
 
   const team = [
     {
-      name: 'Dr. Sarah Johnson',
-      role: 'Founder & CEO',
-      description: 'Former engineering professor with 15+ years of academic experience.',
-      image: 'https://via.placeholder.com/150x150?text=SJ'
+      name: 'Santosh Seelaboina',
+      role: 'Developer',
+      description: 'Main Developer of the project Campus Connect',
+      image: './santosh.jpg'
     },
     {
-      name: 'Michael Chen',
-      role: 'Operations Manager',
-      description: 'Expert in logistics and student services with a passion for innovation.',
-      image: 'https://via.placeholder.com/150x150?text=MC'
+      name: 'Bhanu',
+      role: 'Software Tester',
+      description: 'Software Tester of the project Campus Connect',
+      image: './bhanu.jpg'
     },
     {
-      name: 'Emily Rodriguez',
-      role: 'Customer Success',
-      description: 'Dedicated to ensuring every student has a seamless rental experience.',
+      name: 'Lokesh',
+      role: 'Problem Statement Creator',
+      description: 'The project Campus Connect was created by Lokesh',
       image: 'https://via.placeholder.com/150x150?text=ER'
     }
   ];
@@ -221,30 +223,32 @@ const About = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-green-600">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            Ready to Get Started?
-          </h2>
-          <p className="text-xl text-green-100 mb-8 max-w-2xl mx-auto">
-            Join thousands of students who trust Campus Connect for their equipment rental needs.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              to="/register"
-              className="bg-white text-green-600 hover:bg-gray-100 font-medium py-3 px-8 rounded-lg transition-colors duration-200"
-            >
-              Sign Up Now
-            </Link>
-            <Link
-              to="/contact"
-              className="border-2 border-white text-white hover:bg-white hover:text-green-600 font-medium py-3 px-8 rounded-lg transition-colors duration-200"
-            >
-              Contact Us
-            </Link>
+      {!isAuthenticated && (
+        <section className="py-20 bg-green-600">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+              Ready to Get Started?
+            </h2>
+            <p className="text-xl text-green-100 mb-8 max-w-2xl mx-auto">
+              Join thousands of students who trust Campus Connect for their equipment rental needs.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                to="/register"
+                className="bg-white text-green-600 hover:bg-gray-100 font-medium py-3 px-8 rounded-lg transition-colors duration-200"
+              >
+                Sign Up Now
+              </Link>
+              <Link
+                to="/contact"
+                className="border-2 border-white text-white hover:bg-white hover:text-green-600 font-medium py-3 px-8 rounded-lg transition-colors duration-200"
+              >
+                Contact Us
+              </Link>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
     </div>
   );
 };

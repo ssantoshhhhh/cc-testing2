@@ -1,8 +1,8 @@
 import React from 'react';
 import { useQuery, useQueryClient } from 'react-query';
 import { Link } from 'react-router-dom';
-import { FiUsers, FiPackage, FiShoppingCart, FiTrendingUp, FiAlertCircle, FiCheckCircle, FiRefreshCw } from 'react-icons/fi';
-import axios from 'axios';
+import { FiUsers, FiPackage, FiShoppingCart, FiTrendingUp, FiAlertCircle, FiCheckCircle, FiRefreshCw, FiX } from 'react-icons/fi';
+import axios from '../../axios'; // use the custom axios instance
 
 const AdminDashboard = () => {
   const queryClient = useQueryClient();
@@ -23,6 +23,8 @@ const AdminDashboard = () => {
   const stats = dashboardData?.data?.stats;
   const recentOrders = dashboardData?.data?.recentOrders;
   const lowStockProducts = dashboardData?.data?.lowStockProducts;
+
+
 
   const getStatusBadge = (status) => {
     const statusConfig = {
@@ -88,7 +90,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
           {/* Total Users */}
           <div className="bg-white rounded-lg shadow-lg p-6">
             <div className="flex items-center">
@@ -135,11 +137,29 @@ const AdminDashboard = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-900">Cancelled Orders</p>
-                <p className="text-2xl font-semibold text-red-600">{stats?.cancelledOrders || 0}</p>
+                <p className="text-2xl font-semibold text-red-600">{stats?.adminCancelledOrders || 0}</p>
               </div>
             </div>
             <div className="mt-4">
               <span className="text-sm text-red-600">Orders cancelled by admin</span>
+            </div>
+          </div>
+
+          {/* User Cancelled Orders */}
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center">
+                  <FiX className="w-5 h-5 text-white" />
+                </div>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-900">User Cancelled</p>
+                <p className="text-2xl font-semibold text-orange-600">{stats?.userCancelledOrders || 0}</p>
+              </div>
+            </div>
+            <div className="mt-4">
+              <span className="text-sm text-orange-600">Orders cancelled by users</span>
             </div>
           </div>
 

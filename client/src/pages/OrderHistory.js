@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { FiPackage, FiCalendar, FiClock, FiCheck, FiX, FiAlertCircle } from 'react-icons/fi';
-import axios from 'axios';
+import toast from 'react-hot-toast';
+import axios from '../axios'; // use the custom axios instance
 
 const OrderHistory = () => {
   const [filter, setFilter] = useState('all');
+  const queryClient = useQueryClient();
 
   const { data: ordersData, isLoading, error } = useQuery(
     ['orders', filter],
@@ -21,9 +23,31 @@ const OrderHistory = () => {
     }
   );
 
+  const cancelOrderMutation = useMutation(
+    async (orderId) => {
+      await axios.put(`/api/orders/${orderId}/cancel`);
+    },
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries('orders');
+        toast.success('Order cancelled successfully');
+      },
+      onError: (error) => {
+        const message = error.response?.data?.message || 'Failed to cancel order';
+        toast.error(message);
+      },
+    }
+  );
+
   const orders = ordersData?.data || [];
 
-  const getStatusBadge = (status) => {
+  const handleCancelOrder = (orderId) => {
+    if (window.confirm('Are you sure you want to cancel this order? This action cannot be undone.')) {
+      cancelOrderMutation.mutate(orderId);
+    }
+  };
+
+  const getStatusBadge = (order) => {
     const statusConfig = {
       pending: { color: 'bg-yellow-100 text-yellow-800', icon: FiClock },
       confirmed: { color: 'bg-blue-100 text-blue-800', icon: FiPackage },
@@ -34,13 +58,20 @@ const OrderHistory = () => {
       overdue: { color: 'bg-red-100 text-red-800', icon: FiAlertCircle },
     };
 
-    const config = statusConfig[status] || statusConfig.pending;
+    const config = statusConfig[order.status] || statusConfig.pending;
     const Icon = config.icon;
+
+    let statusText = order.status.charAt(0).toUpperCase() + order.status.slice(1);
+    
+    // Show who cancelled the order if it's cancelled
+    if (order.status === 'cancelled' && order.cancelledBy) {
+      statusText = `Cancelled by ${order.cancelledBy.charAt(0).toUpperCase() + order.cancelledBy.slice(1)}`;
+    }
 
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.color}`}>
         <Icon className="w-3 h-3 mr-1" />
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {statusText}
       </span>
     );
   };
@@ -55,6 +86,21 @@ const OrderHistory = () => {
 
   const calculateTotal = (order) => {
     return order.totalAmount || order.items.reduce((total, item) => total + (item.totalPrice || 0), 0);
+  };
+
+  const formatTimeAgo = (dateString) => {
+    const now = new Date();
+    const orderTime = new Date(dateString);
+    const diffInMinutes = Math.floor((now - orderTime) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
   };
 
   if (isLoading) {
@@ -178,20 +224,32 @@ const OrderHistory = () => {
                       <h3 className="text-lg font-semibold text-gray-900">
                         Order #{order._id.slice(-8).toUpperCase()}
                       </h3>
-                      {getStatusBadge(order.status)}
+                      {getStatusBadge(order)}
                     </div>
-                    <Link
-                      to={`/orders/${order._id}`}
-                      className="text-green-600 hover:text-green-700 font-medium text-sm"
-                    >
-                      View Details
-                    </Link>
+                    <div className="flex items-center space-x-3">
+                      {order.canBeCancelled && (
+                        <button
+                          onClick={() => handleCancelOrder(order._id)}
+                          disabled={cancelOrderMutation.isLoading}
+                          className="px-3 py-1 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors duration-200 disabled:opacity-50"
+                        >
+                          {cancelOrderMutation.isLoading ? 'Cancelling...' : 'Cancel Order'}
+                        </button>
+                      )}
+                      <Link
+                        to={`/orders/${order._id}`}
+                        className="text-green-600 hover:text-green-700 font-medium text-sm"
+                      >
+                        View Details
+                      </Link>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
                       <p className="text-sm text-gray-600">Order Date</p>
                       <p className="font-medium">{formatDate(order.createdAt)}</p>
+                      <p className="text-xs text-gray-500">{formatTimeAgo(order.createdAt)}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Total Amount</p>
@@ -202,6 +260,18 @@ const OrderHistory = () => {
                       <p className="font-medium">{order.items.length} items</p>
                     </div>
                   </div>
+
+                  {/* Cancel Timer for Pending Orders */}
+                  {order.canBeCancelled && (
+                    <div className="mb-4 p-3 bg-yellow-50 rounded-lg">
+                      <div className="flex items-center space-x-2">
+                        <FiClock className="w-4 h-4 text-yellow-600" />
+                        <span className="text-sm text-yellow-800">
+                          You can cancel this order for {order.remainingCancelTime} more minute{order.remainingCancelTime !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Order Items Preview */}
                   <div className="border-t border-gray-200 pt-4">

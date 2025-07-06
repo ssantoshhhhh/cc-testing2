@@ -5,6 +5,7 @@ import { CartProvider } from './contexts/CartContext';
 import PrivateRoute from './components/PrivateRoute';
 import AdminRoute from './components/AdminRoute';
 import Layout from './components/Layout';
+import ScrollToTop from './ScrollToTop';
 
 // Pages
 import Home from './pages/Home';
@@ -33,6 +34,7 @@ function App() {
   return (
     <AuthProvider>
       <CartProvider>
+        <ScrollToTop />
         <Layout>
           <Routes>
             {/* Public Routes */}

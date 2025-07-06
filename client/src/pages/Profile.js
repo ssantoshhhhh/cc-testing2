@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useForm } from 'react-hook-form';
 import { FiUser, FiEdit2, FiSave, FiX } from 'react-icons/fi';
 import { useQuery } from 'react-query';
-import axios from 'axios';
+import axios from '../axios'; // use the custom axios instance
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 
@@ -12,11 +12,11 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch user order statistics
-  const { data: orderStats, isLoading: statsLoading } = useQuery(
-    ['userOrderStats'],
+  // Fetch all user orders for real-time stats
+  const { data: ordersData, isLoading: ordersLoading } = useQuery(
+    ['userOrdersProfile'],
     async () => {
-      const response = await axios.get('/api/users/dashboard');
+      const response = await axios.get('/api/users/orders?limit=1000');
       return response.data;
     },
     {
@@ -26,7 +26,28 @@ const Profile = () => {
       staleTime: 0, // Consider data stale immediately
     }
   );
-  
+
+  const orders = ordersData?.data || [];
+
+  // Calculate stats from orders
+  const nonCancelledOrders = orders.filter(order => order.status !== 'cancelled');
+  const totalOrders = nonCancelledOrders.length;
+  const totalSpent = nonCancelledOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+  const activeRentals = orders.filter(
+    (order) => ['confirmed', 'rented'].includes(order.status)
+  ).length;
+  const overdueRentals = orders.filter(
+    (order) => ['confirmed', 'rented'].includes(order.status) && new Date() > new Date(order.expectedReturnDate)
+  ).length;
+  const totalPenalty = orders.reduce((sum, order) => sum + (order.penaltyAmount || 0), 0);
+  const userCancelledOrders = orders.filter(order => order.status === 'cancelled' && order.cancelledBy === 'user').length;
+  const adminCancelledOrders = orders.filter(order => order.status === 'cancelled' && order.cancelledBy === 'admin').length;
+
+  // For recent orders, show the 5 most recent
+  const recentOrders = [...orders]
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 5);
+
   const {
     register,
     handleSubmit,
@@ -206,7 +227,7 @@ const Profile = () => {
             {/* Account Stats */}
             <div className="mt-8 border-t border-gray-200 pt-8">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Statistics</h3>
-              {statsLoading ? (
+              {ordersLoading ? (
                 <div className="flex items-center justify-center h-32">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
                 </div>
@@ -222,7 +243,7 @@ const Profile = () => {
                       <div className="ml-4">
                         <p className="text-sm font-medium text-gray-900">Total Orders</p>
                         <p className="text-2xl font-semibold text-green-600">
-                          {orderStats?.data?.stats?.totalOrders || 0}
+                          {totalOrders}
                         </p>
                       </div>
                     </div>
@@ -238,7 +259,7 @@ const Profile = () => {
                       <div className="ml-4">
                         <p className="text-sm font-medium text-gray-900">Active Rentals</p>
                         <p className="text-2xl font-semibold text-blue-600">
-                          {orderStats?.data?.stats?.activeRentals || 0}
+                          {activeRentals}
                         </p>
                       </div>
                     </div>
@@ -254,7 +275,7 @@ const Profile = () => {
                       <div className="ml-4">
                         <p className="text-sm font-medium text-gray-900">Total Spent</p>
                         <p className="text-2xl font-semibold text-orange-600">
-                          ₹{orderStats?.data?.stats?.totalSpent || 0}
+                          ₹{totalSpent}
                         </p>
                       </div>
                     </div>
@@ -287,7 +308,7 @@ const Profile = () => {
                       <div className="ml-4">
                         <p className="text-sm font-medium text-gray-900">Overdue Rentals</p>
                         <p className="text-2xl font-semibold text-red-600">
-                          {orderStats?.data?.stats?.overdueRentals || 0}
+                          {overdueRentals}
                         </p>
                       </div>
                     </div>
@@ -303,47 +324,46 @@ const Profile = () => {
                       <div className="ml-4">
                         <p className="text-sm font-medium text-gray-900">Total Penalties</p>
                         <p className="text-2xl font-semibold text-yellow-600">
-                          ₹{orderStats?.data?.stats?.totalPenalty || 0}
+                          ₹{totalPenalty}
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-indigo-50 p-4 rounded-lg">
+                  {/* User Cancelled Orders */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center">
-                          <span className="text-white font-semibold text-sm">📊</span>
+                        <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center">
+                          <span className="text-white font-semibold text-sm">🙋‍♂️</span>
                         </div>
                       </div>
                       <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-900">Avg Order Value</p>
-                        <p className="text-2xl font-semibold text-indigo-600">
-                          ₹{orderStats?.data?.stats?.totalOrders > 0 
-                            ? Math.round((orderStats.data.stats.totalSpent || 0) / orderStats.data.stats.totalOrders)
-                            : 0}
+                        <p className="text-sm font-medium text-gray-900">User Cancelled Orders</p>
+                        <p className="text-2xl font-semibold text-gray-600">
+                          {userCancelledOrders}
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-teal-50 p-4 rounded-lg">
+                  {/* Admin Cancelled Orders */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center">
-                          <span className="text-white font-semibold text-sm">📈</span>
+                        <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center">
+                          <span className="text-white font-semibold text-sm">🛑</span>
                         </div>
                       </div>
                       <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-900">Success Rate</p>
-                        <p className="text-2xl font-semibold text-teal-600">
-                          {orderStats?.data?.stats?.totalOrders > 0 
-                            ? Math.round(((orderStats.data.stats.totalOrders - (orderStats.data.stats.overdueRentals || 0)) / orderStats.data.stats.totalOrders) * 100)
-                            : 100}%
+                        <p className="text-sm font-medium text-gray-900">Admin Cancelled Orders</p>
+                        <p className="text-2xl font-semibold text-gray-800">
+                          {adminCancelledOrders}
                         </p>
                       </div>
                     </div>
                   </div>
+
                 </div>
               )}
             </div>
@@ -359,9 +379,9 @@ const Profile = () => {
                   View All Orders
                 </Link>
               </div>
-              {orderStats?.data?.recentOrders && orderStats.data.recentOrders.length > 0 ? (
+              {recentOrders && recentOrders.length > 0 ? (
                 <div className="space-y-4">
-                  {orderStats.data.recentOrders.map((order) => (
+                  {recentOrders.map((order) => (
                     <div key={order._id} className="bg-gray-50 p-4 rounded-lg">
                       <div className="flex items-center justify-between">
                         <div>

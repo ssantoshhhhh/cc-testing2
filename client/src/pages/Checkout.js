@@ -56,7 +56,10 @@ const Checkout = () => {
           quantity: item.quantity
         })),
         rentalDays: rentalDays,
-        notes: `Delivery Address: ${data.deliveryAddress}${data.deliveryInstructions ? ` | Instructions: ${data.deliveryInstructions}` : ''} | Payment Method: ${data.paymentMethod}`
+        deliveryAddress: data.deliveryAddress,
+        deliveryInstructions: data.deliveryInstructions,
+        paymentMethod: data.paymentMethod,
+        notes: data.deliveryInstructions || ''
       };
 
       const response = await axios.post('/api/orders', orderData);

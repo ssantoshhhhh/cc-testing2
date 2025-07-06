@@ -1,11 +1,13 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useQuery } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { FiPackage, FiCalendar, FiMapPin, FiClock, FiCheck, FiX, FiAlertCircle, FiArrowLeft } from 'react-icons/fi';
-import axios from 'axios';
+import toast from 'react-hot-toast';
+import axios from '../axios'; // use the custom axios instance
 
 const OrderDetail = () => {
   const { id } = useParams();
+  const queryClient = useQueryClient();
 
   const { data: orderData, isLoading, error } = useQuery(
     ['order', id],
@@ -19,9 +21,32 @@ const OrderDetail = () => {
     }
   );
 
+  const cancelOrderMutation = useMutation(
+    async (orderId) => {
+      await axios.put(`/api/orders/${orderId}/cancel`);
+    },
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['order', id]);
+        queryClient.invalidateQueries('orders');
+        toast.success('Order cancelled successfully');
+      },
+      onError: (error) => {
+        const message = error.response?.data?.message || 'Failed to cancel order';
+        toast.error(message);
+      },
+    }
+  );
+
   const order = orderData?.data;
 
-  const getStatusBadge = (status) => {
+  const handleCancelOrder = (orderId) => {
+    if (window.confirm('Are you sure you want to cancel this order? This action cannot be undone.')) {
+      cancelOrderMutation.mutate(orderId);
+    }
+  };
+
+  const getStatusBadge = (order) => {
     const statusConfig = {
       pending: { color: 'bg-yellow-100 text-yellow-800', icon: FiClock },
       confirmed: { color: 'bg-blue-100 text-blue-800', icon: FiPackage },
@@ -32,13 +57,20 @@ const OrderDetail = () => {
       overdue: { color: 'bg-red-100 text-red-800', icon: FiAlertCircle },
     };
 
-    const config = statusConfig[status] || statusConfig.pending;
+    const config = statusConfig[order.status] || statusConfig.pending;
     const Icon = config.icon;
+
+    let statusText = order.status.charAt(0).toUpperCase() + order.status.slice(1);
+    
+    // Show who cancelled the order if it's cancelled
+    if (order.status === 'cancelled' && order.cancelledBy) {
+      statusText = `Cancelled by ${order.cancelledBy.charAt(0).toUpperCase() + order.cancelledBy.slice(1)}`;
+    }
 
     return (
       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${config.color}`}>
         <Icon className="w-4 h-4 mr-2" />
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {statusText}
       </span>
     );
   };
@@ -109,9 +141,32 @@ const OrderDetail = () => {
               </h1>
               <p className="text-gray-600 mt-1">Placed on {formatDate(order.createdAt)}</p>
             </div>
-            {getStatusBadge(order.status)}
+            <div className="flex items-center space-x-4">
+              {order.canBeCancelled && (
+                <button
+                  onClick={() => handleCancelOrder(order._id)}
+                  disabled={cancelOrderMutation.isLoading}
+                  className="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors duration-200 disabled:opacity-50"
+                >
+                  {cancelOrderMutation.isLoading ? 'Cancelling...' : 'Cancel Order'}
+                </button>
+              )}
+              {getStatusBadge(order)}
+            </div>
           </div>
         </div>
+
+        {/* Cancel Timer for Pending Orders */}
+        {order.canBeCancelled && (
+          <div className="mb-6 p-4 bg-yellow-50 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <FiClock className="w-5 h-5 text-yellow-600" />
+              <span className="text-sm text-yellow-800">
+                You can cancel this order for {order.remainingCancelTime} more minute{order.remainingCancelTime !== 1 ? 's' : ''}
+              </span>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Order Details */}
@@ -249,7 +304,19 @@ const OrderDetail = () => {
                     </div>
                   </div>
                   
-                  {order.status !== 'pending' && (
+                  {order.status === 'confirmed' && (
+                    <div className="flex items-start space-x-3">
+                      <div className="w-2 h-2 bg-green-600 rounded-full mt-2"></div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Order Confirmed</p>
+                        <p className="text-xs text-gray-600">
+                          {order.updatedAt ? formatDate(order.updatedAt) : 'Recently'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {order.status === 'rented' && (
                     <div className="flex items-start space-x-3">
                       <div className="w-2 h-2 bg-green-600 rounded-full mt-2"></div>
                       <div>
@@ -277,6 +344,30 @@ const OrderDetail = () => {
                       <div>
                         <p className="text-sm font-medium text-gray-900">Returned</p>
                         <p className="text-xs text-gray-600">Items returned successfully</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {order.status === 'cancelled' && (
+                    <div className="flex items-start space-x-3">
+                      <div className="w-2 h-2 bg-red-600 rounded-full mt-2"></div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {order.cancelledBy === 'admin' ? 'Cancelled by Admin' : 'Order Cancelled'}
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          {order.updatedAt ? formatDate(order.updatedAt) : 'Recently'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {order.status === 'overdue' && (
+                    <div className="flex items-start space-x-3">
+                      <div className="w-2 h-2 bg-red-600 rounded-full mt-2"></div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Order Overdue</p>
+                        <p className="text-xs text-gray-600">Return date has passed</p>
                       </div>
                     </div>
                   )}

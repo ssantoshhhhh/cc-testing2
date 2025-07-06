@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { FiShoppingCart, FiSearch, FiEye, FiCheck, FiX, FiAlertCircle } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import axios from '../../axios'; // use the custom axios instance
 
 const AdminOrders = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -49,7 +49,7 @@ const AdminOrders = () => {
     return idMatch || nameMatch || emailMatch;
   });
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = (order) => {
     const statusConfig = {
       pending: { color: 'bg-yellow-100 text-yellow-800', icon: FiAlertCircle },
       confirmed: { color: 'bg-blue-100 text-blue-800', icon: FiCheck },
@@ -60,13 +60,20 @@ const AdminOrders = () => {
       overdue: { color: 'bg-red-100 text-red-800', icon: FiAlertCircle },
     };
 
-    const config = statusConfig[status] || statusConfig.pending;
+    const config = statusConfig[order.status] || statusConfig.pending;
     const Icon = config.icon;
+
+    let statusText = order.status.charAt(0).toUpperCase() + order.status.slice(1);
+    
+    // Show who cancelled the order if it's cancelled
+    if (order.status === 'cancelled' && order.cancelledBy) {
+      statusText = `Cancelled by ${order.cancelledBy.charAt(0).toUpperCase() + order.cancelledBy.slice(1)}`;
+    }
 
     return (
       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
         <Icon className="w-3 h-3 mr-1" />
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {statusText}
       </span>
     );
   };
@@ -223,6 +230,12 @@ const AdminOrders = () => {
                       Customer
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Delivery Address
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Payment
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Items
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -259,6 +272,21 @@ const AdminOrders = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 max-w-xs truncate" title={order.deliveryAddress}>
+                          {order.deliveryAddress || 'No address'}
+                        </div>
+                        {order.deliveryInstructions && (
+                          <div className="text-xs text-gray-500 max-w-xs truncate" title={order.deliveryInstructions}>
+                            📝 {order.deliveryInstructions}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 capitalize">
+                          {order.paymentMethod || 'Not specified'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
                           {order.items.map(item => item.product?.name || 'Product').join(', ')}
                         </div>
@@ -269,7 +297,7 @@ const AdminOrders = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(order.status)}
+                        {getStatusBadge(order)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">

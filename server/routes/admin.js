@@ -24,8 +24,17 @@ router.get('/dashboard', async (req, res) => {
     // Get total orders (excluding cancelled/rejected orders)
     const totalOrders = await Order.countDocuments({ status: { $ne: 'cancelled' } });
     
-    // Get cancelled orders count
-    const cancelledOrders = await Order.countDocuments({ status: 'cancelled' });
+    // Get admin cancelled orders count
+    const adminCancelledOrders = await Order.countDocuments({ 
+      status: 'cancelled',
+      cancelledBy: 'admin'
+    });
+    
+    // Get user cancelled orders count
+    const userCancelledOrders = await Order.countDocuments({ 
+      status: 'cancelled',
+      cancelledBy: 'user'
+    });
     
     // Get revenue statistics (excluding cancelled/rejected orders)
     const revenueStats = await Order.aggregate([
@@ -69,6 +78,15 @@ router.get('/dashboard', async (req, res) => {
       }
     ]);
 
+    // Ensure we have default values if no revenue stats
+    const defaultRevenueStats = {
+      totalRevenue: 0,
+      totalPenalty: 0,
+      pendingOrders: 0,
+      activeRentals: 0,
+      overdueRentals: 0
+    };
+
     // Get recent orders (including cancelled orders so admin can see all transactions)
     const recentOrders = await Order.find()
       .populate('user', 'name email studentId')
@@ -82,6 +100,8 @@ router.get('/dashboard', async (req, res) => {
       availableQuantity: { $lte: 5 }
     }).sort({ availableQuantity: 1 });
 
+
+
     res.json({
       success: true,
       data: {
@@ -89,8 +109,9 @@ router.get('/dashboard', async (req, res) => {
           totalUsers,
           totalProducts,
           totalOrders,
-          cancelledOrders, // Add cancelled orders count
-          ...revenueStats[0]
+          adminCancelledOrders, // Admin cancelled orders count
+          userCancelledOrders, // User cancelled orders count
+          ...(revenueStats[0] || defaultRevenueStats)
         },
         recentOrders,
         lowStockProducts
@@ -378,6 +399,9 @@ router.put('/orders/:id/status', [
     }
 
     order.status = req.body.status;
+    if (req.body.status === 'cancelled') {
+      order.cancelledBy = 'admin';
+    }
     await order.save();
 
     res.json({

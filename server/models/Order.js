@@ -68,6 +68,23 @@ const orderSchema = new mongoose.Schema({
   notes: {
     type: String
   },
+  deliveryAddress: {
+    type: String,
+    required: true
+  },
+  deliveryInstructions: {
+    type: String
+  },
+  paymentMethod: {
+    type: String,
+    enum: ['cash', 'card', 'upi', 'netbanking'],
+    required: true
+  },
+  cancelledBy: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -110,6 +127,32 @@ orderSchema.virtual('remainingDays').get(function() {
   if (new Date() > this.expectedReturnDate) return 0;
   const diffTime = Math.abs(this.expectedReturnDate - new Date());
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+});
+
+// Virtual for checking if order can be cancelled (within 10 minutes)
+orderSchema.virtual('canBeCancelled').get(function() {
+  if (this.status === 'cancelled') return false;
+  if (this.status !== 'pending') return false;
+  
+  const now = new Date();
+  const orderTime = new Date(this.createdAt);
+  const timeDiff = now - orderTime;
+  const tenMinutes = 10 * 60 * 1000; // 10 minutes in milliseconds
+  
+  return timeDiff <= tenMinutes;
+});
+
+// Virtual for calculating remaining time to cancel (in minutes)
+orderSchema.virtual('remainingCancelTime').get(function() {
+  if (!this.canBeCancelled) return 0;
+  
+  const now = new Date();
+  const orderTime = new Date(this.createdAt);
+  const timeDiff = now - orderTime;
+  const tenMinutes = 10 * 60 * 1000;
+  const remainingTime = tenMinutes - timeDiff;
+  
+  return Math.max(0, Math.ceil(remainingTime / (1000 * 60))); // Return minutes
 });
 
 // Ensure virtual fields are serialized
