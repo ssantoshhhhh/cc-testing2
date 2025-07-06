@@ -76,6 +76,7 @@ const ProductDetail = () => {
   // Find the pricePerDay from product, default to 0 if not available
   const pricePerDay = Number(product.pricePerDay) || 0;
   const totalPrice = pricePerDay * rentalDays * quantity;
+  const isOutOfStock = product.availableQuantity === 0;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -115,12 +116,20 @@ const ProductDetail = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-8">
             {/* Product Image */}
             <div className="space-y-4">
-              <div className="aspect-w-1 aspect-h-1 w-full">
+              <div className="aspect-w-1 aspect-h-1 w-full relative">
                 <img
                   src={product.images && product.images[0] ? product.images[0] : '/placeholder-product.svg'}
                   alt={product.name}
                   className="w-full h-96 object-cover rounded-lg shadow-md"
                 />
+                {isOutOfStock && (
+                  <div className="absolute inset-0 bg-red-500 bg-opacity-75 flex items-center justify-center rounded-lg">
+                    <div className="text-white text-center">
+                      <div className="text-2xl font-bold mb-2">Out of Stock</div>
+                      <div className="text-sm">This item is currently unavailable</div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -152,82 +161,102 @@ const ProductDetail = () => {
                   <span className="text-2xl font-bold text-green-600">
                     ₹{pricePerDay}/day
                   </span>
-                  <span className="text-sm text-gray-500">
-                    {product.availableQuantity} items available
-                  </span>
+                  <div className="text-right">
+                    {isOutOfStock ? (
+                      <span className="text-sm text-red-600 font-medium">Out of Stock</span>
+                    ) : (
+                      <span className="text-sm text-gray-500">
+                        {product.availableQuantity} items available
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Rental Options */}
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Rental Duration (days)
-                  </label>
-                  <select
-                    value={rentalDays}
-                    onChange={(e) => setRentalDays(parseInt(e.target.value))}
-                    className="input-field"
-                  >
-                    {[1, 2, 3, 4, 5, 6, 7, 14, 30].map((days) => (
-                      <option key={days} value={days}>
-                        {days} {days === 1 ? 'day' : 'days'}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              {!isOutOfStock && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Rental Duration (days)
+                    </label>
+                    <select
+                      value={rentalDays}
+                      onChange={(e) => setRentalDays(parseInt(e.target.value))}
+                      className="input-field"
+                    >
+                      {[1, 2, 3, 4, 5, 6, 7, 14, 30].map((days) => (
+                        <option key={days} value={days}>
+                          {days} {days === 1 ? 'day' : 'days'}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Quantity
-                  </label>
-                  <div className="flex items-center space-x-3">
-                    <button
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50"
-                    >
-                      -
-                    </button>
-                    <span className="text-lg font-medium w-12 text-center">{quantity}</span>
-                    <button
-                      onClick={() => setQuantity(Math.min(product.availableQuantity, quantity + 1))}
-                      className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50"
-                    >
-                      +
-                    </button>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Quantity
+                    </label>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                        className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50"
+                      >
+                        -
+                      </button>
+                      <span className="text-lg font-medium w-12 text-center">{quantity}</span>
+                      <button
+                        onClick={() => setQuantity(Math.min(product.availableQuantity, quantity + 1))}
+                        className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Total Price */}
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-medium text-gray-900">Total Price:</span>
+                      <span className="text-2xl font-bold text-green-600">
+                        ₹{totalPrice}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">
+                      For {rentalDays} {rentalDays === 1 ? 'day' : 'days'} × {quantity} {quantity === 1 ? 'item' : 'items'}
+                    </p>
                   </div>
                 </div>
-
-                {/* Total Price */}
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-medium text-gray-900">Total Price:</span>
-                    <span className="text-2xl font-bold text-green-600">
-                      ₹{totalPrice}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-1">
-                    For {rentalDays} {rentalDays === 1 ? 'day' : 'days'} × {quantity} {quantity === 1 ? 'item' : 'items'}
-                  </p>
-                </div>
-              </div>
+              )}
 
               {/* Action Buttons */}
               <div className="flex space-x-4">
-                <button
-                  onClick={handleAddToCart}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2"
-                >
-                  <FiShoppingCart className="w-5 h-5" />
-                  <span>Add to Cart</span>
-                </button>
-                <button
-                  onClick={handleRentNow}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2"
-                >
-                  <FiCalendar className="w-5 h-5" />
-                  <span>Rent Now</span>
-                </button>
+                {isOutOfStock ? (
+                  <button
+                    disabled
+                    className="flex-1 bg-gray-400 text-white font-medium py-3 px-6 rounded-lg cursor-not-allowed flex items-center justify-center space-x-2"
+                  >
+                    <FiShoppingCart className="w-5 h-5" />
+                    <span>Out of Stock</span>
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleAddToCart}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2"
+                    >
+                      <FiShoppingCart className="w-5 h-5" />
+                      <span>Add to Cart</span>
+                    </button>
+                    <button
+                      onClick={handleRentNow}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2"
+                    >
+                      <FiCalendar className="w-5 h-5" />
+                      <span>Rent Now</span>
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>

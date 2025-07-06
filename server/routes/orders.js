@@ -357,16 +357,34 @@ router.put('/:id/status', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findById(req.params.id)
+      .populate('items.product');
     
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
 
+    const previousStatus = order.status;
     order.status = req.body.status;
+    
     if (req.body.status === 'cancelled') {
       order.cancelledBy = 'admin';
     }
+
+    // Handle inventory restoration when order is cancelled or returned
+    if ((req.body.status === 'cancelled' && previousStatus !== 'cancelled') || 
+        (req.body.status === 'returned' && previousStatus !== 'returned')) {
+      
+      // Return items to inventory
+      for (const item of order.items) {
+        const product = await Product.findById(item.product._id);
+        if (product) {
+          product.availableQuantity += item.quantity;
+          await product.save();
+        }
+      }
+    }
+
     await order.save();
 
     res.json({

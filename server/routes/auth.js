@@ -137,10 +137,14 @@ router.post('/login', [
       console.log('Password does not match for user:', email);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
+    // Generate JWT token
+    const token = generateToken(user._id);
+    
     // Set session
     req.session.userId = user._id;
     res.json({
       success: true,
+      token,
       user: {
         id: user._id,
         name: user.name,

@@ -62,11 +62,38 @@ const OrderDetail = () => {
     }
   );
 
+  const returnOrderMutation = useMutation(
+    async (orderId) => {
+      const response = await axios.put(`/api/orders/${orderId}/return`);
+      return response.data;
+    },
+    {
+      onSuccess: (data) => {
+        queryClient.invalidateQueries(['order', id]);
+        queryClient.invalidateQueries('orders');
+        toast.success('Items returned successfully');
+        if (data.penalty && data.penalty.amount > 0) {
+          toast.error(`Late return penalty: ₹${data.penalty.amount} (${data.penalty.days} days overdue)`);
+        }
+      },
+      onError: (error) => {
+        const message = error.response?.data?.message || 'Failed to return items';
+        toast.error(message);
+      },
+    }
+  );
+
   const order = orderData?.data;
 
   const handleCancelOrder = (orderId) => {
     if (window.confirm('Are you sure you want to cancel this order? This action cannot be undone.')) {
       cancelOrderMutation.mutate(orderId);
+    }
+  };
+
+  const handleReturnOrder = (orderId) => {
+    if (window.confirm('Are you sure you want to return these items? This will mark the order as returned.')) {
+      returnOrderMutation.mutate(orderId);
     }
   };
 
@@ -415,6 +442,37 @@ const OrderDetail = () => {
                   Contact Support
                 </Link>
               </div>
+
+              {/* Return Button */}
+              {(order.status === 'confirmed' || order.status === 'rented') && (
+                <div className="mt-6">
+                  <button
+                    onClick={() => handleReturnOrder(order._id)}
+                    disabled={returnOrderMutation.isLoading}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                  >
+                    {returnOrderMutation.isLoading ? 'Returning...' : 'Return Items'}
+                  </button>
+                  <p className="text-xs text-gray-600 mt-2 text-center">
+                    Return your items to restore inventory
+                  </p>
+                </div>
+              )}
+
+              {/* Cancel Button (only for pending orders within 10 minutes) */}
+              {order.status === 'pending' && order.canBeCancelled && (
+                <div className="mt-6">
+                  <button
+                    onClick={() => handleCancelOrder(order._id)}
+                    className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200"
+                  >
+                    Cancel Order
+                  </button>
+                  <p className="text-xs text-gray-600 mt-2 text-center">
+                    Orders can only be cancelled within 10 minutes of placement
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>

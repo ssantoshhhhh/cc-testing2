@@ -8,14 +8,17 @@ const AdminInventory = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
   const [showRestockModal, setShowRestockModal] = useState(false);
+  const [showReduceModal, setShowReduceModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [restockAmount, setRestockAmount] = useState('');
+  const [reduceAmount, setReduceAmount] = useState('');
+  const [actionType, setActionType] = useState('restock'); // 'restock' or 'reduce'
   const queryClient = useQueryClient();
 
-  const { data: inventory, isLoading, error } = useQuery(
+  const { data: inventoryData, isLoading, error } = useQuery(
     ['admin-inventory', filter],
     async () => {
-      const response = await axios.get(`/api/admin/inventory?status=${filter}`);
+      const response = await axios.get('/api/admin/products/inventory');
       return response.data;
     },
     {
@@ -25,8 +28,8 @@ const AdminInventory = () => {
   );
 
   const restockMutation = useMutation(
-    async ({ productId, amount }) => {
-      await axios.put(`/api/admin/inventory/${productId}/restock`, { amount });
+    async ({ productId, quantity }) => {
+      await axios.post(`/api/admin/products/${productId}/restock`, { quantity });
     },
     {
       onSuccess: () => {
@@ -42,9 +45,27 @@ const AdminInventory = () => {
     }
   );
 
-  const filteredInventory = inventory?.filter(item =>
-    item.product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.product.category.toLowerCase().includes(searchTerm.toLowerCase())
+  const reduceStockMutation = useMutation(
+    async ({ productId, quantity }) => {
+      await axios.post(`/api/admin/products/${productId}/reduce-stock`, { quantity });
+    },
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries('admin-inventory');
+        toast.success('Stock reduced successfully');
+        setShowReduceModal(false);
+        setSelectedProduct(null);
+        setReduceAmount('');
+      },
+      onError: (error) => {
+        toast.error(error.response?.data?.message || 'Failed to reduce stock');
+      },
+    }
+  );
+
+  const filteredInventory = inventoryData?.data?.products?.filter(product =>
+    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    product.category.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
   const handleRestock = () => {
@@ -54,14 +75,33 @@ const AdminInventory = () => {
     }
     restockMutation.mutate({
       productId: selectedProduct._id,
-      amount: parseInt(restockAmount),
+      quantity: parseInt(restockAmount),
     });
   };
 
-  const getStockStatus = (stock) => {
-    if (stock === 0) return { status: 'Out of Stock', color: 'bg-red-100 text-red-800' };
-    if (stock <= 5) return { status: 'Low Stock', color: 'bg-yellow-100 text-yellow-800' };
-    if (stock <= 10) return { status: 'Medium Stock', color: 'bg-orange-100 text-orange-800' };
+  const handleReduceStock = () => {
+    if (!reduceAmount || reduceAmount <= 0) {
+      toast.error('Please enter a valid amount');
+      return;
+    }
+    if (parseInt(reduceAmount) > selectedProduct.availableQuantity) {
+      toast.error('Cannot reduce more than available quantity');
+      return;
+    }
+    if (parseInt(reduceAmount) > selectedProduct.totalQuantity) {
+      toast.error('Cannot reduce more than total quantity');
+      return;
+    }
+    reduceStockMutation.mutate({
+      productId: selectedProduct._id,
+      quantity: parseInt(reduceAmount),
+    });
+  };
+
+  const getStockStatus = (availableQuantity) => {
+    if (availableQuantity === 0) return { status: 'Out of Stock', color: 'bg-red-100 text-red-800' };
+    if (availableQuantity <= 5) return { status: 'Low Stock', color: 'bg-yellow-100 text-yellow-800' };
+    if (availableQuantity <= 10) return { status: 'Medium Stock', color: 'bg-orange-100 text-orange-800' };
     return { status: 'In Stock', color: 'bg-green-100 text-green-800' };
   };
 
@@ -90,6 +130,13 @@ const AdminInventory = () => {
     );
   }
 
+  const inventoryStats = inventoryData?.data?.stats || {
+    totalItems: 0,
+    availableItems: 0,
+    rentedItems: 0,
+    lowStockItems: 0
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -111,7 +158,7 @@ const AdminInventory = () => {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-900">Total Items</p>
                 <p className="text-2xl font-semibold text-gray-900">
-                  {inventory?.reduce((total, item) => total + item.stock, 0) || 0}
+                  {inventoryStats.totalItems}
                 </p>
               </div>
             </div>
@@ -125,9 +172,25 @@ const AdminInventory = () => {
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-900">In Stock</p>
+                <p className="text-sm font-medium text-gray-900">Available Items</p>
                 <p className="text-2xl font-semibold text-gray-900">
-                  {inventory?.filter(item => item.stock > 10).length || 0}
+                  {inventoryStats.availableItems}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                  <FiPackage className="w-5 h-5 text-white" />
+                </div>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-900">Rented Items</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {inventoryStats.rentedItems}
                 </p>
               </div>
             </div>
@@ -141,25 +204,9 @@ const AdminInventory = () => {
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-900">Low Stock</p>
+                <p className="text-sm font-medium text-gray-900">Low Stock Items</p>
                 <p className="text-2xl font-semibold text-gray-900">
-                  {inventory?.filter(item => item.stock <= 5 && item.stock > 0).length || 0}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center">
-                  <FiAlertCircle className="w-5 h-5 text-white" />
-                </div>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-900">Out of Stock</p>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {inventory?.filter(item => item.stock === 0).length || 0}
+                  {inventoryStats.lowStockItems}
                 </p>
               </div>
             </div>
@@ -246,7 +293,10 @@ const AdminInventory = () => {
                       Category
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Current Stock
+                      Total Quantity
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Available Quantity
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
@@ -257,32 +307,37 @@ const AdminInventory = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredInventory.map((item) => {
-                    const stockStatus = getStockStatus(item.stock);
+                  {filteredInventory.map((product) => {
+                    const stockStatus = getStockStatus(product.availableQuantity);
                     return (
-                      <tr key={item._id} className="hover:bg-gray-50">
+                      <tr key={product._id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <img
-                              src={item.product.image || '/placeholder-product.svg'}
-                              alt={item.product.name}
+                              src={product.images?.[0] || '/placeholder-product.svg'}
+                              alt={product.name}
                               className="w-10 h-10 object-cover rounded-lg"
                             />
                             <div className="ml-4">
                               <div className="text-sm font-medium text-gray-900">
-                                {item.product.name}
+                                {product.name}
                               </div>
                               <div className="text-sm text-gray-500">
-                                ₹{item.product.rentalPrice}/day
+                                ₹{product.pricePerDay}/day
                               </div>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{item.product.category}</div>
+                          <div className="text-sm text-gray-900 capitalize">
+                            {product.category.replace('-', ' ')}
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{item.stock} units</div>
+                          <div className="text-sm font-medium text-gray-900">{product.totalQuantity} units</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{product.availableQuantity} units</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${stockStatus.color}`}>
@@ -290,16 +345,28 @@ const AdminInventory = () => {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button
-                            onClick={() => {
-                              setSelectedProduct(item.product);
-                              setShowRestockModal(true);
-                            }}
-                            className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                          >
-                            <FiPlus className="mr-1 h-3 w-3" />
-                            Restock
-                          </button>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => {
+                                setSelectedProduct(product);
+                                setShowRestockModal(true);
+                              }}
+                              className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                            >
+                              <FiPlus className="mr-1 h-3 w-3" />
+                              Restock
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedProduct(product);
+                                setShowReduceModal(true);
+                              }}
+                              className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                            >
+                              <FiMinus className="mr-1 h-3 w-3" />
+                              Reduce
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -331,7 +398,8 @@ const AdminInventory = () => {
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Restock Product</h3>
                 <div className="mb-4">
                   <p className="text-sm text-gray-600 mb-2">Product: {selectedProduct.name}</p>
-                  <p className="text-sm text-gray-600">Current Stock: {selectedProduct.stock} units</p>
+                  <p className="text-sm text-gray-600">Current Total: {selectedProduct.totalQuantity} units</p>
+                  <p className="text-sm text-gray-600">Available: {selectedProduct.availableQuantity} units</p>
                 </div>
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -363,6 +431,58 @@ const AdminInventory = () => {
                     className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50"
                   >
                     {restockMutation.isLoading ? 'Updating...' : 'Update Stock'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Reduce Stock Modal */}
+        {showReduceModal && selectedProduct && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+              <div className="mt-3">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Reduce Stock</h3>
+                <div className="mb-4">
+                  <p className="text-sm text-gray-600 mb-2">Product: {selectedProduct.name}</p>
+                  <p className="text-sm text-gray-600">Current Total: {selectedProduct.totalQuantity} units</p>
+                  <p className="text-sm text-gray-600">Available: {selectedProduct.availableQuantity} units</p>
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Amount to Reduce
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max={Math.min(selectedProduct.totalQuantity, selectedProduct.availableQuantity)}
+                    value={reduceAmount}
+                    onChange={(e) => setReduceAmount(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    placeholder="Enter amount"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Maximum: {Math.min(selectedProduct.totalQuantity, selectedProduct.availableQuantity)} units
+                  </p>
+                </div>
+                <div className="flex justify-end space-x-3">
+                  <button
+                    onClick={() => {
+                      setShowReduceModal(false);
+                      setSelectedProduct(null);
+                      setReduceAmount('');
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleReduceStock}
+                    disabled={reduceStockMutation.isLoading}
+                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {reduceStockMutation.isLoading ? 'Updating...' : 'Reduce Stock'}
                   </button>
                 </div>
               </div>

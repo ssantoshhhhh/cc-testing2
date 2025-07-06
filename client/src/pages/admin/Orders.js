@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { FiShoppingCart, FiSearch, FiEye, FiCheck, FiX, FiAlertCircle } from 'react-icons/fi';
 import toast from 'react-hot-toast';
@@ -8,6 +8,17 @@ const AdminOrders = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
   const queryClient = useQueryClient();
+  const audioRef = useRef(null);
+  const unlockRef = useRef(null);
+  const lastOrderIdRef = useRef(null);
+  const [audioUnlocked, setAudioUnlocked] = useState(() => {
+    const saved = localStorage.getItem('adminAudioUnlocked');
+    return saved !== null ? JSON.parse(saved) : true; // Default to true
+  });
+  const [showUnlockBanner, setShowUnlockBanner] = useState(() => {
+    const saved = localStorage.getItem('adminAudioUnlocked');
+    return saved === null ? false : !JSON.parse(saved); // Show banner only if not saved or explicitly disabled
+  });
 
   const { data: ordersData, isLoading, error } = useQuery(
     ['admin-orders', filter],
@@ -39,6 +50,90 @@ const AdminOrders = () => {
   );
 
   const orders = ordersData?.data || [];
+
+  // Auto-unlock audio on component mount
+  useEffect(() => {
+    const unlockAudio = async () => {
+      try {
+        if (unlockRef.current) {
+          // Try to play a silent audio to unlock audio context
+          unlockRef.current.volume = 0;
+          await unlockRef.current.play();
+          unlockRef.current.pause();
+          unlockRef.current.currentTime = 0;
+          
+          // Only update state if we don't have a saved preference or if it was enabled
+          const saved = localStorage.getItem('adminAudioUnlocked');
+          if (saved === null || JSON.parse(saved)) {
+            setAudioUnlocked(true);
+            setShowUnlockBanner(false);
+            localStorage.setItem('adminAudioUnlocked', 'true');
+          }
+        }
+      } catch (error) {
+        // If auto-play fails, only show banner if we don't have a saved preference
+        const saved = localStorage.getItem('adminAudioUnlocked');
+        if (saved === null) {
+          setShowUnlockBanner(true);
+          setAudioUnlocked(false);
+          localStorage.setItem('adminAudioUnlocked', 'false');
+        }
+      }
+    };
+    
+    // Try to unlock audio after a short delay to allow page to load
+    const timer = setTimeout(unlockAudio, 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Play sound if a new order is detected
+  useEffect(() => {
+    if (audioUnlocked && orders && orders.length > 0) {
+      const latestOrderId = orders[0]._id;
+      if (lastOrderIdRef.current && lastOrderIdRef.current !== latestOrderId) {
+        // New order detected
+        if (audioRef.current) {
+          audioRef.current.currentTime = 0;
+          audioRef.current.play();
+        }
+      }
+      lastOrderIdRef.current = latestOrderId;
+    }
+  }, [orders, audioUnlocked]);
+
+  // Handler to unlock audio
+  const handleUnlockAudio = () => {
+    if (unlockRef.current) {
+      unlockRef.current.volume = 0;
+      unlockRef.current.play().then(() => {
+        unlockRef.current.pause();
+        unlockRef.current.currentTime = 0;
+        setAudioUnlocked(true);
+        setShowUnlockBanner(false);
+        localStorage.setItem('adminAudioUnlocked', 'true');
+      }).catch(() => {
+        setAudioUnlocked(false);
+        setShowUnlockBanner(true);
+        localStorage.setItem('adminAudioUnlocked', 'false');
+      });
+    }
+  };
+
+  // Handle page click to unlock audio
+  const handlePageClick = () => {
+    if (!audioUnlocked && unlockRef.current) {
+      handleUnlockAudio();
+    }
+  };
+
+  // Add a toggle function to manually enable/disable notifications
+  const toggleNotifications = () => {
+    const newState = !audioUnlocked;
+    setAudioUnlocked(newState);
+    setShowUnlockBanner(!newState);
+    localStorage.setItem('adminAudioUnlocked', JSON.stringify(newState));
+  };
+
   // Updated filter: always include orders with missing user info, and allow searching for 'unknown' or 'no email'
   const filteredOrders = orders.filter(order => {
     const idMatch = order._id.toLowerCase().includes(searchTerm.toLowerCase());
@@ -122,12 +217,36 @@ const AdminOrders = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-8" onClick={handlePageClick}>
+      {/* Audio unlock banner */}
+      {showUnlockBanner && (
+        <div className="bg-yellow-100 border-b border-yellow-300 text-yellow-900 px-4 py-2 text-center cursor-pointer" onClick={handleUnlockAudio}>
+          Click here to enable sound notifications for new orders.
+        </div>
+      )}
+      {/* Audio element for alert */}
+      <audio ref={audioRef} src="/alert.mp3" preload="auto" />
+      {/* Silent audio for unlocking */}
+      <audio ref={unlockRef} src="/alert.mp3" preload="auto" style={{ display: 'none' }} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Order Management</h1>
-          <p className="text-gray-600 mt-2">Process and track rental orders</p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Order Management</h1>
+              <p className="text-gray-600 mt-2">Process and track rental orders</p>
+            </div>
+            <button
+              onClick={toggleNotifications}
+              className={`inline-flex items-center px-4 py-2 border rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ${
+                audioUnlocked
+                  ? 'border-green-300 text-green-700 bg-green-50 hover:bg-green-100'
+                  : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+              }`}
+            >
+              {audioUnlocked ? '🔊' : '🔇'} Notifications {audioUnlocked ? 'On' : 'Off'}
+            </button>
+          </div>
         </div>
 
         {/* Filters and Search */}

@@ -137,84 +137,95 @@ const Collection = () => {
         {/* Products Grid */}
         {products.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {products.map((product) => (
-              <div
-                key={product._id}
-                className="bg-white rounded-lg shadow-soft overflow-hidden hover:shadow-medium transition-shadow duration-300"
-              >
-                {/* Product Image */}
-                <div className="aspect-w-16 aspect-h-9 bg-gray-200">
-                  <img
-                    src={product.images[0] || 'https://via.placeholder.com/400x300?text=Product'}
-                    alt={product.name}
-                    className="w-full h-48 object-cover"
-                  />
-                </div>
-
-                {/* Product Info */}
-                <div className="p-4">
-                  {/* Category Badge */}
-                  <div className="flex items-center justify-between mb-2">
-                    <span className={`badge ${
-                      product.category === 'mini-drafter' ? 'badge-info' : 'badge-success'
-                    }`}>
-                      {product.category === 'mini-drafter' ? 'Mini Drafter' : 'Lab Apron'}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      {product.availableQuantity} available
-                    </span>
+            {products.map((product) => {
+              const isOutOfStock = product.availableQuantity === 0;
+              return (
+                <div
+                  key={product._id}
+                  className={`bg-white rounded-lg shadow-soft overflow-hidden hover:shadow-medium transition-shadow duration-300 ${
+                    isOutOfStock ? 'opacity-75' : ''
+                  }`}
+                >
+                  {/* Product Image */}
+                  <div className="aspect-w-16 aspect-h-9 bg-gray-200 relative">
+                    <img
+                      src={product.images[0] || 'https://via.placeholder.com/400x300?text=Product'}
+                      alt={product.name}
+                      className="w-full h-48 object-cover"
+                    />
+                    {isOutOfStock && (
+                      <div className="absolute inset-0 bg-red-500 bg-opacity-75 flex items-center justify-center">
+                        <div className="text-white text-center">
+                          <div className="text-lg font-bold mb-1">Out of Stock</div>
+                          <div className="text-xs">Currently Unavailable</div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Product Name */}
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
-                    {product.name}
-                  </h3>
-
-                  {/* Description */}
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                    {product.description}
-                  </p>
-
-                  {/* Price and Action */}
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-xl font-bold text-green-600">
-                        ₹{product.pricePerDay}
+                  {/* Product Info */}
+                  <div className="p-4">
+                    {/* Category Badge */}
+                    <div className="flex items-center justify-between mb-2">
+                      <span className={`badge ${
+                        product.category === 'mini-drafter' ? 'badge-info' : 'badge-success'
+                      }`}>
+                        {product.category === 'mini-drafter' ? 'Mini Drafter' : 'Lab Apron'}
                       </span>
-                      <span className="text-sm text-gray-500">/day</span>
+                      <span className={`text-sm ${
+                        isOutOfStock ? 'text-red-600 font-medium' : 'text-gray-500'
+                      }`}>
+                        {isOutOfStock ? 'Out of Stock' : `${product.availableQuantity} available`}
+                      </span>
                     </div>
-                    <Link
-                      to={`/product/${product._id}`}
-                      className="btn-primary text-sm px-4 py-2 flex items-center"
-                    >
-                      <FaEye className="mr-1" />
-                      View
-                    </Link>
-                  </div>
 
-                  {/* Condition */}
-                  <div className="mt-2">
-                    <span className="text-xs text-gray-500 capitalize">
-                      Condition: {product.condition}
-                    </span>
+                    {/* Product Name */}
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
+                      {product.name}
+                    </h3>
+
+                    {/* Description */}
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                      {product.description}
+                    </p>
+
+                    {/* Price and Action */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-xl font-bold text-green-600">
+                          ₹{product.pricePerDay}
+                        </span>
+                        <span className="text-sm text-gray-500">/day</span>
+                      </div>
+                      <Link
+                        to={`/product/${product._id}`}
+                        className={`text-sm px-4 py-2 flex items-center rounded-lg transition-colors ${
+                          isOutOfStock 
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                            : 'btn-primary hover:bg-green-700'
+                        }`}
+                        onClick={isOutOfStock ? (e) => e.preventDefault() : undefined}
+                      >
+                        <FaEye className="mr-1" />
+                        {isOutOfStock ? 'Unavailable' : 'View'}
+                      </Link>
+                    </div>
+
+                    {/* Condition */}
+                    <div className="mt-2">
+                      <span className="text-xs text-gray-500 capitalize">
+                        Condition: {product.condition}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-12">
-            <div className="text-6xl mb-4">🔍</div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No products found</h3>
-            <p className="text-gray-600 mb-4">
-              Try adjusting your search criteria or browse all products
-            </p>
-            <button
-              onClick={() => setFilters({ category: '', search: '', sort: 'createdAt:desc' })}
-              className="btn-primary"
-            >
-              Clear Filters
-            </button>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
+            <p className="text-gray-600">Try adjusting your search or filter criteria.</p>
           </div>
         )}
 

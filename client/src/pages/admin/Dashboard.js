@@ -9,8 +9,14 @@ const AdminDashboard = () => {
   const audioRef = useRef(null);
   const unlockRef = useRef(null);
   const lastOrderIdRef = useRef(null);
-  const [audioUnlocked, setAudioUnlocked] = useState(false);
-  const [showUnlockBanner, setShowUnlockBanner] = useState(true);
+  const [audioUnlocked, setAudioUnlocked] = useState(() => {
+    const saved = localStorage.getItem('adminAudioUnlocked');
+    return saved !== null ? JSON.parse(saved) : true; // Default to true
+  });
+  const [showUnlockBanner, setShowUnlockBanner] = useState(() => {
+    const saved = localStorage.getItem('adminAudioUnlocked');
+    return saved === null ? false : !JSON.parse(saved); // Show banner only if not saved or explicitly disabled
+  });
 
   const { data: dashboardData, isLoading, refetch } = useQuery(
     'admin-dashboard',
@@ -30,6 +36,41 @@ const AdminDashboard = () => {
   const recentOrders = dashboardData?.data?.recentOrders;
   const lowStockProducts = dashboardData?.data?.lowStockProducts;
 
+  // Auto-unlock audio on component mount
+  useEffect(() => {
+    const unlockAudio = async () => {
+      try {
+        if (unlockRef.current) {
+          // Try to play a silent audio to unlock audio context
+          unlockRef.current.volume = 0;
+          await unlockRef.current.play();
+          unlockRef.current.pause();
+          unlockRef.current.currentTime = 0;
+          
+          // Only update state if we don't have a saved preference or if it was enabled
+          const saved = localStorage.getItem('adminAudioUnlocked');
+          if (saved === null || JSON.parse(saved)) {
+            setAudioUnlocked(true);
+            setShowUnlockBanner(false);
+            localStorage.setItem('adminAudioUnlocked', 'true');
+          }
+        }
+      } catch (error) {
+        // If auto-play fails, only show banner if we don't have a saved preference
+        const saved = localStorage.getItem('adminAudioUnlocked');
+        if (saved === null) {
+          setShowUnlockBanner(true);
+          setAudioUnlocked(false);
+          localStorage.setItem('adminAudioUnlocked', 'false');
+        }
+      }
+    };
+    
+    // Try to unlock audio after a short delay to allow page to load
+    const timer = setTimeout(unlockAudio, 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Play sound if a new order is detected
   useEffect(() => {
     if (audioUnlocked && recentOrders && recentOrders.length > 0) {
@@ -48,11 +89,43 @@ const AdminDashboard = () => {
   // Handler to unlock audio
   const handleUnlockAudio = () => {
     if (unlockRef.current) {
+      unlockRef.current.volume = 0;
       unlockRef.current.play().then(() => {
+        unlockRef.current.pause();
+        unlockRef.current.currentTime = 0;
         setAudioUnlocked(true);
         setShowUnlockBanner(false);
+        localStorage.setItem('adminAudioUnlocked', 'true');
+      }).catch(() => {
+        setAudioUnlocked(false);
+        setShowUnlockBanner(true);
+        localStorage.setItem('adminAudioUnlocked', 'false');
       });
     }
+  };
+
+  // Handle page click to unlock audio
+  const handlePageClick = () => {
+    if (!audioUnlocked && unlockRef.current) {
+      handleUnlockAudio();
+    }
+  };
+
+  // Add a toggle function to manually enable/disable notifications
+  const toggleNotifications = () => {
+    const newState = !audioUnlocked;
+    setAudioUnlocked(newState);
+    setShowUnlockBanner(!newState);
+    localStorage.setItem('adminAudioUnlocked', JSON.stringify(newState));
+    console.log('Notifications toggled to:', newState);
+  };
+
+  // Debug function to check localStorage
+  const debugStorage = () => {
+    const saved = localStorage.getItem('adminAudioUnlocked');
+    console.log('localStorage adminAudioUnlocked:', saved);
+    console.log('Current audioUnlocked state:', audioUnlocked);
+    console.log('Current showUnlockBanner state:', showUnlockBanner);
   };
 
 
@@ -99,7 +172,7 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-8" onClick={handlePageClick}>
       {/* Audio unlock banner */}
       {showUnlockBanner && (
         <div className="bg-yellow-100 border-b border-yellow-300 text-yellow-900 px-4 py-2 text-center cursor-pointer" onClick={handleUnlockAudio}>
@@ -118,14 +191,34 @@ const AdminDashboard = () => {
               <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
               <p className="text-gray-600 mt-2">Welcome back! Here's what's happening with your rental platform.</p>
             </div>
-            <button
-              onClick={() => refetch()}
-              disabled={isLoading}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
-            >
-              <FiRefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh Data
-            </button>
+            <div className="flex space-x-3">
+              <div className="flex space-x-2">
+                <button
+                  onClick={toggleNotifications}
+                  className={`inline-flex items-center px-4 py-2 border rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ${
+                    audioUnlocked
+                      ? 'border-green-300 text-green-700 bg-green-50 hover:bg-green-100'
+                      : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                  }`}
+                >
+                  {audioUnlocked ? '🔊' : '🔇'} Notifications {audioUnlocked ? 'On' : 'Off'}
+                </button>
+                <button
+                  onClick={debugStorage}
+                  className="inline-flex items-center px-2 py-2 border border-gray-300 rounded-md shadow-sm text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                >
+                  🐛 Debug
+                </button>
+              </div>
+              <button
+                onClick={() => refetch()}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+              >
+                <FiRefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                Refresh Data
+              </button>
+            </div>
           </div>
         </div>
 

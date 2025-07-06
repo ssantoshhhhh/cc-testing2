@@ -379,6 +379,47 @@ router.post('/products/:id/restock', [
   }
 });
 
+// @route   POST /api/admin/products/:id/reduce-stock
+// @desc    Reduce product stock
+// @access  Private/Admin
+router.post('/products/:id/reduce-stock', [
+  body('quantity').isInt({ min: 1 }).withMessage('Quantity must be at least 1')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const product = await Product.findById(req.params.id);
+    
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Check if we can reduce the stock
+    if (product.totalQuantity < req.body.quantity) {
+      return res.status(400).json({ message: 'Cannot reduce more than total quantity' });
+    }
+
+    if (product.availableQuantity < req.body.quantity) {
+      return res.status(400).json({ message: 'Cannot reduce more than available quantity' });
+    }
+
+    product.totalQuantity -= req.body.quantity;
+    product.availableQuantity -= req.body.quantity;
+    await product.save();
+
+    res.json({
+      success: true,
+      data: product
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // @route   PUT /api/admin/orders/:id/status
 // @desc    Update order status (Admin only)
 // @access  Private/Admin
@@ -392,16 +433,34 @@ router.put('/orders/:id/status', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findById(req.params.id)
+      .populate('items.product');
     
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
 
+    const previousStatus = order.status;
     order.status = req.body.status;
+    
     if (req.body.status === 'cancelled') {
       order.cancelledBy = 'admin';
     }
+
+    // Handle inventory restoration when order is cancelled or returned
+    if ((req.body.status === 'cancelled' && previousStatus !== 'cancelled') || 
+        (req.body.status === 'returned' && previousStatus !== 'returned')) {
+      
+      // Return items to inventory
+      for (const item of order.items) {
+        const product = await Product.findById(item.product._id);
+        if (product) {
+          product.availableQuantity += item.quantity;
+          await product.save();
+        }
+      }
+    }
+
     await order.save();
 
     res.json({
