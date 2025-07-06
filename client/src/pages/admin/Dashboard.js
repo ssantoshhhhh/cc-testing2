@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from 'react-query';
 import { Link } from 'react-router-dom';
 import { FiUsers, FiPackage, FiShoppingCart, FiTrendingUp, FiAlertCircle, FiCheckCircle, FiRefreshCw, FiX } from 'react-icons/fi';
@@ -6,6 +6,12 @@ import axios from '../../axios'; // use the custom axios instance
 
 const AdminDashboard = () => {
   const queryClient = useQueryClient();
+  const audioRef = useRef(null);
+  const unlockRef = useRef(null);
+  const lastOrderIdRef = useRef(null);
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const [showUnlockBanner, setShowUnlockBanner] = useState(true);
+
   const { data: dashboardData, isLoading, refetch } = useQuery(
     'admin-dashboard',
     async () => {
@@ -24,6 +30,30 @@ const AdminDashboard = () => {
   const recentOrders = dashboardData?.data?.recentOrders;
   const lowStockProducts = dashboardData?.data?.lowStockProducts;
 
+  // Play sound if a new order is detected
+  useEffect(() => {
+    if (audioUnlocked && recentOrders && recentOrders.length > 0) {
+      const latestOrderId = recentOrders[0]._id;
+      if (lastOrderIdRef.current && lastOrderIdRef.current !== latestOrderId) {
+        // New order detected
+        if (audioRef.current) {
+          audioRef.current.currentTime = 0;
+          audioRef.current.play();
+        }
+      }
+      lastOrderIdRef.current = latestOrderId;
+    }
+  }, [recentOrders, audioUnlocked]);
+
+  // Handler to unlock audio
+  const handleUnlockAudio = () => {
+    if (unlockRef.current) {
+      unlockRef.current.play().then(() => {
+        setAudioUnlocked(true);
+        setShowUnlockBanner(false);
+      });
+    }
+  };
 
 
   const getStatusBadge = (status) => {
@@ -70,6 +100,16 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
+      {/* Audio unlock banner */}
+      {showUnlockBanner && (
+        <div className="bg-yellow-100 border-b border-yellow-300 text-yellow-900 px-4 py-2 text-center cursor-pointer" onClick={handleUnlockAudio}>
+          Click here to enable sound notifications for new orders.
+        </div>
+      )}
+      {/* Audio element for alert */}
+      <audio ref={audioRef} src="/alert.mp3" preload="auto" />
+      {/* Silent audio for unlocking */}
+      <audio ref={unlockRef} src="/alert.mp3" preload="auto" style={{ display: 'none' }} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
