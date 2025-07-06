@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const { protect, authorize } = require('../middleware/auth');
+const nodemailer = require('nodemailer');
 
 const router = express.Router();
 
@@ -80,6 +81,77 @@ router.post('/', [
     });
 
     await order.populate('items.product');
+
+    // Robust logging for email
+    console.log('Attempting to send admin order email for order:', order._id);
+    try {
+      const user = req.user;
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS
+        }
+      });
+      const itemLines = order.items.map(item =>
+        `<li><b>${item.product.name}</b> (x${item.quantity}) for ${order.rentalDays} days: ₹${item.totalPrice}</li>`
+      ).join('');
+      const htmlBody = `
+        <h2>New Order Placed!</h2>
+        <p><b>Order ID:</b> ${order._id}</p>
+        <p><b>User:</b> ${user.name} (${user.email})</p>
+        <p><b>Delivery Address:</b> ${order.deliveryAddress}</p>
+        <p><b>Delivery Instructions:</b> ${order.deliveryInstructions || 'N/A'}</p>
+        <p><b>Payment Method:</b> ${order.paymentMethod}</p>
+        <p><b>Total Amount:</b> ₹${order.totalAmount}</p>
+        <p><b>Placed at:</b> ${order.createdAt}</p>
+        <h3>Items:</h3>
+        <ul>${itemLines}</ul>
+        <p>Please check the admin dashboard for more details.</p>
+      `;
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: 'srkrcampusconnect@gmail.com',
+        subject: `New Order Placed: #${order._id.toString().slice(-8).toUpperCase()}`,
+        text:
+`A new order has been placed!\n\nOrder ID: ${order._id}\nUser: ${user.name} (${user.email})\nDelivery Address: ${order.deliveryAddress}\nDelivery Instructions: ${order.deliveryInstructions || 'N/A'}\nPayment Method: ${order.paymentMethod}\nTotal Amount: ₹${order.totalAmount}\n\nItems:\n${order.items.map(item => `- ${item.product.name} (x${item.quantity}) for ${order.rentalDays} days: ₹${item.totalPrice}`).join('\n')}\n\nPlaced at: ${order.createdAt}\n\nPlease check the admin dashboard for more details.`,
+        html: htmlBody
+      };
+      await transporter.sendMail(mailOptions);
+      console.log('Admin order email sent to srkrcampusconnect@gmail.com for order:', order._id);
+    } catch (mailErr) {
+      console.error('Failed to send admin order email for order', order._id, mailErr);
+    }
+
+    // Send order confirmation email to user
+    try {
+      const user = req.user;
+      const userMailOptions = {
+        from: process.env.EMAIL_USER,
+        to: user.email,
+        subject: `Order Confirmation: #${order._id.toString().slice(-8).toUpperCase()}`,
+        text:
+`Dear ${user.name},\n\nThank you for your order!\n\nOrder ID: ${order._id}\nDelivery Address: ${order.deliveryAddress}\nDelivery Instructions: ${order.deliveryInstructions || 'N/A'}\nPayment Method: ${order.paymentMethod}\nTotal Amount: ₹${order.totalAmount}\n\nItems:\n${order.items.map(item => `- ${item.product.name} (x${item.quantity}) for ${order.rentalDays} days: ₹${item.totalPrice}`).join('\n')}\n\nPlaced at: ${order.createdAt}\n\nWe will process your order soon. Thank you for choosing us!`,
+        html: `
+          <h2>Order Confirmation</h2>
+          <p>Dear ${user.name},</p>
+          <p>Thank you for your order!</p>
+          <p><b>Order ID:</b> ${order._id}</p>
+          <p><b>Delivery Address:</b> ${order.deliveryAddress}</p>
+          <p><b>Delivery Instructions:</b> ${order.deliveryInstructions || 'N/A'}</p>
+          <p><b>Payment Method:</b> ${order.paymentMethod}</p>
+          <p><b>Total Amount:</b> ₹${order.totalAmount}</p>
+          <p><b>Placed at:</b> ${order.createdAt}</p>
+          <h3>Items:</h3>
+          <ul>${order.items.map(item => `<li><b>${item.product.name}</b> (x${item.quantity}) for ${order.rentalDays} days: ₹${item.totalPrice}</li>`).join('')}</ul>
+          <p>We will process your order soon. Thank you for choosing us!</p>
+        `
+      };
+      await transporter.sendMail(userMailOptions);
+      console.log('Order confirmation email sent to user:', user.email, 'for order:', order._id);
+    } catch (userMailErr) {
+      console.error('Failed to send order confirmation email to user for order', order._id, userMailErr);
+    }
 
     res.status(201).json({
       success: true,

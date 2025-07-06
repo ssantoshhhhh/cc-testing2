@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+// Remove EmailJS import
 const User = require('../models/User');
 const { protect } = require('../middleware/auth');
 
@@ -13,6 +14,26 @@ const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRE
   });
+};
+
+// Send welcome email using Nodemailer
+const sendWelcomeEmailNodemailer = async (userEmail, userName) => {
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    }
+  });
+
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: userEmail,
+    subject: 'Welcome to Campus Connect!',
+    text: `Hello ${userName},\n\nWelcome to Campus Connect! We are excited to have you on board.\n\nIf you have any questions, feel free to reply to this email.\n\nBest regards,\nCampus Connect Team`
+  };
+
+  await transporter.sendMail(mailOptions);
 };
 
 // @route   POST /api/auth/register
@@ -49,6 +70,16 @@ router.post('/register', [
       phone,
       department
     });
+
+    // Send welcome email (Nodemailer)
+    try {
+      await sendWelcomeEmailNodemailer(user.email, user.name);
+      console.log('Welcome email sent to:', user.email);
+    } catch (emailError) {
+      console.error('Failed to send welcome email:', emailError);
+      // Don't fail the registration if email fails
+    }
+
     // Set session
     req.session.userId = user._id;
     res.status(201).json({
@@ -129,7 +160,7 @@ router.post('/login', [
 });
 
 // @route   POST /api/auth/forgot-password
-// @desc    Forgot password
+// @desc    Send OTP for password reset
 // @access  Public
 router.post('/forgot-password', [
   body('email').isEmail().withMessage('Please enter a valid email')
@@ -147,18 +178,15 @@ router.post('/forgot-password', [
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Generate reset token
-    const resetToken = crypto.randomBytes(20).toString('hex');
-    user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.resetPasswordOTP = otp;
+    user.resetPasswordOTPExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
 
     await user.save();
 
-    // Create reset URL
-    const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
-
-    // Email configuration (you'll need to set up your email credentials)
-    const transporter = nodemailer.createTransporter({
+    // Send OTP via email
+    const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: process.env.EMAIL_USER,
@@ -169,26 +197,44 @@ router.post('/forgot-password', [
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: 'Password Reset Token',
-      text: `You are receiving this email because you (or someone else) has requested the reset of a password. Please make a PUT request to: \n\n ${resetUrl}`
+      subject: 'Password Reset OTP - Campus Connect',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Password Reset Request</h2>
+          <p>Hello ${user.name},</p>
+          <p>You have requested to reset your password. Please use the following OTP to proceed:</p>
+          <div style="background-color: #f4f4f4; padding: 20px; text-align: center; margin: 20px 0;">
+            <h1 style="color: #007bff; font-size: 32px; margin: 0; letter-spacing: 5px;">${otp}</h1>
+          </div>
+          <p><strong>Important:</strong></p>
+          <ul>
+            <li>This OTP is valid for 10 minutes only</li>
+            <li>Do not share this OTP with anyone</li>
+            <li>If you didn't request this, please ignore this email</li>
+          </ul>
+          <p>Best regards,<br>Campus Connect Team</p>
+        </div>
+      `
     };
 
     await transporter.sendMail(mailOptions);
 
-    res.json({ message: 'Email sent' });
+    res.json({ 
+      success: true,
+      message: 'OTP sent to your email address' 
+    });
   } catch (error) {
-    console.error(error);
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpire = undefined;
-    await user.save();
+    console.error('Forgot password error:', error);
     res.status(500).json({ message: 'Email could not be sent' });
   }
 });
 
-// @route   PUT /api/auth/reset-password/:resettoken
-// @desc    Reset password
+// @route   POST /api/auth/verify-otp
+// @desc    Verify OTP and reset password
 // @access  Public
-router.put('/reset-password/:resettoken', [
+router.post('/verify-otp', [
+  body('email').isEmail().withMessage('Please enter a valid email'),
+  body('otp').isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
 ], async (req, res) => {
   try {
@@ -197,48 +243,134 @@ router.put('/reset-password/:resettoken', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    // Get hashed token
-    const resetPasswordToken = crypto
-      .createHash('sha256')
-      .update(req.params.resettoken)
-      .digest('hex');
+    const { email, otp, password } = req.body;
 
-    const user = await User.findOne({
-      resetPasswordToken,
-      resetPasswordExpire: { $gt: Date.now() }
-    });
+    // Find user by email
+    const user = await User.findOne({ email });
 
     if (!user) {
-      return res.status(400).json({ message: 'Invalid token' });
+      return res.status(404).json({ message: 'User not found' });
     }
 
-    // Set new password
-    user.password = req.body.password;
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpire = undefined;
+    // Check if OTP exists and is valid
+    if (!user.resetPasswordOTP || user.resetPasswordOTP !== otp) {
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+
+    // Check if OTP is expired
+    if (user.resetPasswordOTPExpire < Date.now()) {
+      return res.status(400).json({ message: 'OTP has expired' });
+    }
+
+    // Update password
+    user.password = password;
+    user.resetPasswordOTP = undefined;
+    user.resetPasswordOTPExpire = undefined;
     await user.save();
 
-    // Generate token
-    const token = generateToken(user._id);
+    // Send confirmation email
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Password Reset Successful - Campus Connect',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Password Reset Successful</h2>
+          <p>Hello ${user.name},</p>
+          <p>Your password has been successfully reset.</p>
+          <p>If you did not perform this action, please contact us immediately.</p>
+          <p>Best regards,<br>Campus Connect Team</p>
+        </div>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
 
     res.json({
       success: true,
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        studentId: user.studentId,
-        department: user.department,
-        phone: user.phone,
-        address: user.address,
-        createdAt: user.createdAt
-      }
+      message: 'Password reset successful'
     });
   } catch (error) {
-    console.error(error);
+    console.error('Verify OTP error:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/auth/resend-otp
+// @desc    Resend OTP for password reset
+// @access  Public
+router.post('/resend-otp', [
+  body('email').isEmail().withMessage('Please enter a valid email')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Generate new 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.resetPasswordOTP = otp;
+    user.resetPasswordOTPExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+    await user.save();
+
+    // Send new OTP via email
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'New Password Reset OTP - Campus Connect',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">New Password Reset OTP</h2>
+          <p>Hello ${user.name},</p>
+          <p>You have requested a new OTP for password reset. Please use the following OTP:</p>
+          <div style="background-color: #f4f4f4; padding: 20px; text-align: center; margin: 20px 0;">
+            <h1 style="color: #007bff; font-size: 32px; margin: 0; letter-spacing: 5px;">${otp}</h1>
+          </div>
+          <p><strong>Important:</strong></p>
+          <ul>
+            <li>This OTP is valid for 10 minutes only</li>
+            <li>Do not share this OTP with anyone</li>
+            <li>If you didn't request this, please ignore this email</li>
+          </ul>
+          <p>Best regards,<br>Campus Connect Team</p>
+        </div>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.json({ 
+      success: true,
+      message: 'New OTP sent to your email address' 
+    });
+  } catch (error) {
+    console.error('Resend OTP error:', error);
+    res.status(500).json({ message: 'Email could not be sent' });
   }
 });
 
