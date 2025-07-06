@@ -207,13 +207,39 @@ const About = () => {
             {team.map((member, index) => (
               <div key={index} className="text-center">
                 <div className="w-32 h-32 mx-auto mb-6 rounded-full overflow-hidden">
-                  <img
-                    src={member.image}
-                    alt={member.name}
-                    className="w-full h-full object-cover"
-                  />
+                  {member.name === 'Santosh Seelaboina' ? (
+                    <a
+                      href="https://santosh-a6qm.onrender.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <img
+                        src={member.image}
+                        alt={member.name}
+                        className="w-full h-full object-cover cursor-pointer"
+                      />
+                    </a>
+                  ) : (
+                    <img
+                      src={member.image}
+                      alt={member.name}
+                      className="w-full h-full object-cover"
+                    />
+                  )}
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">{member.name}</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  {member.name === 'Santosh Seelaboina' ? (
+                    <a
+                      href="https://santosh-a6qm.onrender.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {member.name}
+                    </a>
+                  ) : (
+                    member.name
+                  )}
+                </h3>
                 <p className="text-green-600 font-medium mb-4">{member.role}</p>
                 <p className="text-gray-600">{member.description}</p>
               </div>
