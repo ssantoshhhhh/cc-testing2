@@ -1,13 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { FiPackage, FiCalendar, FiClock, FiCheck, FiX, FiAlertCircle } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import axios from '../axios'; // use the custom axios instance
+import useOrderNotifications from '../hooks/useOrderNotifications';
 
 const OrderHistory = () => {
   const [filter, setFilter] = useState('all');
   const queryClient = useQueryClient();
+  const previousOrdersRef = useRef([]);
+  
+  const {
+    confirmedAudioRef,
+    rejectedAudioRef,
+    playOrderStatusSound
+  } = useOrderNotifications();
 
   const { data: ordersData, isLoading, error } = useQuery(
     ['orders', filter],
@@ -22,6 +30,25 @@ const OrderHistory = () => {
       staleTime: 0, // Consider data stale immediately
     }
   );
+
+  // Check for order status changes and play sounds
+  useEffect(() => {
+    if (ordersData?.data && previousOrdersRef.current.length > 0) {
+      const currentOrders = ordersData.data;
+      const previousOrders = previousOrdersRef.current;
+
+      currentOrders.forEach(currentOrder => {
+        const previousOrder = previousOrders.find(prev => prev._id === currentOrder._id);
+        if (previousOrder && previousOrder.status !== currentOrder.status) {
+          playOrderStatusSound(currentOrder.status, previousOrder.status);
+        }
+      });
+    }
+    
+    if (ordersData?.data) {
+      previousOrdersRef.current = ordersData.data;
+    }
+  }, [ordersData, playOrderStatusSound]);
 
   const cancelOrderMutation = useMutation(
     async (orderId) => {
@@ -130,6 +157,10 @@ const OrderHistory = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
+
+      {/* Audio elements for notifications */}
+      <audio ref={confirmedAudioRef} src="/confimed.mp3" preload="auto" />
+      <audio ref={rejectedAudioRef} src="/rejected.mp3" preload="auto" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">

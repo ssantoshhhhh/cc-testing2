@@ -1,13 +1,21 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { FiPackage, FiCalendar, FiMapPin, FiClock, FiCheck, FiX, FiAlertCircle, FiArrowLeft } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import axios from '../axios'; // use the custom axios instance
+import useOrderNotifications from '../hooks/useOrderNotifications';
 
 const OrderDetail = () => {
   const { id } = useParams();
   const queryClient = useQueryClient();
+  const previousOrderRef = useRef(null);
+  
+  const {
+    confirmedAudioRef,
+    rejectedAudioRef,
+    playOrderStatusSound
+  } = useOrderNotifications();
 
   const { data: orderData, isLoading, error } = useQuery(
     ['order', id],
@@ -20,6 +28,22 @@ const OrderDetail = () => {
       refetchOnWindowFocus: false,
     }
   );
+
+  // Check for order status changes and play sounds
+  useEffect(() => {
+    if (orderData?.data && previousOrderRef.current) {
+      const currentOrder = orderData.data;
+      const previousOrder = previousOrderRef.current;
+      
+      if (previousOrder.status !== currentOrder.status) {
+        playOrderStatusSound(currentOrder.status, previousOrder.status);
+      }
+    }
+    
+    if (orderData?.data) {
+      previousOrderRef.current = orderData.data;
+    }
+  }, [orderData, playOrderStatusSound]);
 
   const cancelOrderMutation = useMutation(
     async (orderId) => {
@@ -124,6 +148,10 @@ const OrderDetail = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
+
+      {/* Audio elements for notifications */}
+      <audio ref={confirmedAudioRef} src="/confimed.mp3" preload="auto" />
+      <audio ref={rejectedAudioRef} src="/rejected.mp3" preload="auto" />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">

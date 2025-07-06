@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useForm } from 'react-hook-form';
 import { FiUser, FiEdit2, FiSave, FiX } from 'react-icons/fi';
@@ -6,11 +6,19 @@ import { useQuery } from 'react-query';
 import axios from '../axios'; // use the custom axios instance
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
+import useOrderNotifications from '../hooks/useOrderNotifications';
 
 const Profile = () => {
   const { user, updateProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const previousOrdersRef = useRef([]);
+  
+  const {
+    confirmedAudioRef,
+    rejectedAudioRef,
+    playOrderStatusSound
+  } = useOrderNotifications();
 
   // Fetch all user orders for real-time stats
   const { data: ordersData, isLoading: ordersLoading } = useQuery(
@@ -26,6 +34,25 @@ const Profile = () => {
       staleTime: 0, // Consider data stale immediately
     }
   );
+
+  // Check for order status changes and play sounds
+  useEffect(() => {
+    if (ordersData?.data && previousOrdersRef.current.length > 0) {
+      const currentOrders = ordersData.data;
+      const previousOrders = previousOrdersRef.current;
+
+      currentOrders.forEach(currentOrder => {
+        const previousOrder = previousOrders.find(prev => prev._id === currentOrder._id);
+        if (previousOrder && previousOrder.status !== currentOrder.status) {
+          playOrderStatusSound(currentOrder.status, previousOrder.status);
+        }
+      });
+    }
+    
+    if (ordersData?.data) {
+      previousOrdersRef.current = ordersData.data;
+    }
+  }, [ordersData, playOrderStatusSound]);
 
   const orders = ordersData?.data || [];
 
@@ -83,6 +110,10 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
+
+      {/* Audio elements for notifications */}
+      <audio ref={confirmedAudioRef} src="/confimed.mp3" preload="auto" />
+      <audio ref={rejectedAudioRef} src="/rejected.mp3" preload="auto" />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           {/* Header */}
