@@ -879,6 +879,64 @@ router.put('/orders/:id/status', [
       }
     }
 
+    // Send return confirmation email if status changed to returned
+    if (previousStatus !== 'returned' && req.body.status === 'returned') {
+      console.log('DEBUG: Attempting to send return confirmation email for order:', order._id);
+      try {
+        // Populate user for email
+        await order.populate('user');
+        const user = order.user;
+        console.log('DEBUG: User email for return confirmation:', user.email);
+        
+        if (!user.email) {
+          console.error('DEBUG: User email is missing for order:', order._id);
+          throw new Error('User email not found');
+        }
+        
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+          }
+        });
+        
+        const itemLines = order.items.map(item =>
+          `<li><b>${item.product.name}</b> (x${item.quantity}) for ${order.rentalDays} days: ₹${item.totalPrice}</li>`
+        ).join('');
+        
+        const htmlBody = `
+          <h2>Your Order is Returned!</h2>
+          <p>Dear ${user.name},</p>
+          <p>Your order has been returned.</p>
+          <p><b>Order ID:</b> ${order._id}</p>
+          <p><b>Delivery Address:</b> ${order.deliveryAddress}</p>
+          <p><b>Delivery Instructions:</b> ${order.deliveryInstructions || 'N/A'}</p>
+          <p><b>Payment Method:</b> ${order.paymentMethod}</p>
+          <p><b>Total Amount:</b> ₹${order.totalAmount}</p>
+          <p><b>Placed at:</b> ${order.createdAt}</p>
+          <h3>Items:</h3>
+          <ul>${itemLines}</ul>
+          <p>Thank you for choosing us!</p>
+        `;
+        
+        const mailOptions = {
+          from: process.env.EMAIL_USER,
+          to: user.email,
+          subject: `Items Returned Successfully: #${order._id.toString().slice(-8).toUpperCase()}`,
+          text:
+`Dear ${user.name},\n\nYour order has been returned.\n\nOrder ID: ${order._id}\nDelivery Address: ${order.deliveryAddress}\nDelivery Instructions: ${order.deliveryInstructions || 'N/A'}\nPayment Method: ${order.paymentMethod}\nTotal Amount: ₹${order.totalAmount}\nPlaced at: ${order.createdAt}\n\nThank you for choosing us!`,
+          html: htmlBody
+        };
+        
+        console.log('DEBUG: Sending return confirmation email to:', user.email);
+        await transporter.sendMail(mailOptions);
+        console.log('Return confirmation email sent to user:', user.email, 'for order:', order._id);
+      } catch (userMailErr) {
+        console.error('Failed to send return confirmation email to user for order', order._id, userMailErr);
+      }
+    }
+
     await order.save();
 
     res.json({

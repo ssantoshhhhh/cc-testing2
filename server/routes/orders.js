@@ -284,6 +284,60 @@ router.put('/:id/return', protect, async (req, res) => {
 
     await order.save();
 
+    // Send return confirmation email to user
+    try {
+      // Populate user for email
+      await order.populate('user');
+      const user = order.user;
+      
+      if (user.email) {
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+          }
+        });
+        
+        const itemLines = order.items.map(item =>
+          `<li><b>${item.product.name}</b> (x${item.quantity}) for ${order.rentalDays} days: ₹${item.totalPrice}</li>`
+        ).join('');
+        
+        const penaltyText = penaltyAmount > 0 ? 
+          `<p><b>Penalty Applied:</b> ₹${penaltyAmount} (${penaltyDays} days overdue)</p>` : '';
+        
+        const htmlBody = `
+          <h2>Your Order is Returned!</h2>
+          <p>Dear ${user.name},</p>
+          <p>Your order has been returned.</p>
+          <p><b>Order ID:</b> ${order._id}</p>
+          <p><b>Delivery Address:</b> ${order.deliveryAddress}</p>
+          <p><b>Delivery Instructions:</b> ${order.deliveryInstructions || 'N/A'}</p>
+          <p><b>Payment Method:</b> ${order.paymentMethod}</p>
+          <p><b>Total Amount:</b> ₹${order.totalAmount}</p>
+          <p><b>Placed at:</b> ${order.createdAt}</p>
+          ${penaltyText}
+          <h3>Items:</h3>
+          <ul>${itemLines}</ul>
+          <p>Thank you for choosing us!</p>
+        `;
+        
+        const mailOptions = {
+          from: process.env.EMAIL_USER,
+          to: user.email,
+          subject: `Items Returned Successfully: #${order._id.toString().slice(-8).toUpperCase()}`,
+                    text:
+`Dear ${user.name},\n\nYour order has been returned.\n\nOrder ID: ${order._id}\nDelivery Address: ${order.deliveryAddress}\nDelivery Instructions: ${order.deliveryInstructions || 'N/A'}\nPayment Method: ${order.paymentMethod}\nTotal Amount: ₹${order.totalAmount}\nPlaced at: ${order.createdAt}${penaltyAmount > 0 ? `\nPenalty Applied: ₹${penaltyAmount} (${penaltyDays} days overdue)` : ''}\n\nThank you for choosing us!`,
+          html: htmlBody
+        };
+        
+        await transporter.sendMail(mailOptions);
+        console.log('Return confirmation email sent to user:', user.email, 'for order:', order._id);
+      }
+    } catch (userMailErr) {
+      console.error('Failed to send return confirmation email to user for order', order._id, userMailErr);
+    }
+
     res.json({
       success: true,
       data: order,
