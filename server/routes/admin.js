@@ -149,17 +149,43 @@ router.get('/users', async (req, res) => {
 
     const total = await User.countDocuments(query);
 
+    // Aggregate order counts for each user
+    const userIds = users.map(u => u._id);
+    // Get total orders per user
+    const ordersAgg = await Order.aggregate([
+      { $match: { user: { $in: userIds } } },
+      { $group: { _id: '$user', totalRentals: { $sum: 1 } } }
+    ]);
+    // Get active rentals per user
+    const activeAgg = await Order.aggregate([
+      { $match: { user: { $in: userIds }, status: { $in: ['confirmed', 'rented'] } } },
+      { $group: { _id: '$user', activeRentals: { $sum: 1 } } }
+    ]);
+    // Convert to maps for quick lookup
+    const ordersMap = Object.fromEntries(ordersAgg.map(o => [o._id.toString(), o.totalRentals]));
+    const activeMap = Object.fromEntries(activeAgg.map(a => [a._id.toString(), a.activeRentals]));
+
+    // Attach counts to each user
+    const usersWithCounts = users.map(user => {
+      const id = user._id.toString();
+      return {
+        ...user.toObject(),
+        totalRentals: ordersMap[id] || 0,
+        activeRentals: activeMap[id] || 0
+      };
+    });
+
     res.json({
       success: true,
-      count: users.length,
+      count: usersWithCounts.length,
       total,
       pagination: {
         current: parseInt(page),
         pages: Math.ceil(total / parseInt(limit)),
-        hasNext: skip + users.length < total,
+        hasNext: skip + usersWithCounts.length < total,
         hasPrev: parseInt(page) > 1
       },
-      data: users
+      data: usersWithCounts
     });
   } catch (error) {
     console.error(error);
@@ -236,7 +262,7 @@ router.put('/users/:id', [
 // @access  Private/Admin
 router.get('/orders', async (req, res) => {
   try {
-    const { status, search, limit = 10, page = 1 } = req.query;
+    const { status, search, limit = 100, page = 1 } = req.query;
     
     let query = {};
     if (status) {
@@ -297,6 +323,60 @@ router.get('/orders/overdue', async (req, res) => {
       success: true,
       count: overdueOrders.length,
       data: overdueOrders
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   GET /api/admin/products
+// @desc    Get all products with filtering
+// @access  Private/Admin
+router.get('/products', async (req, res) => {
+  try {
+    const { status = 'all', search = '', limit = 50, page = 1 } = req.query;
+    
+    let query = { isActive: true };
+    
+    // Filter by status
+    if (status === 'available') {
+      query.availableQuantity = { $gt: 0 };
+    } else if (status === 'low-stock') {
+      query.availableQuantity = { $lte: 5, $gt: 0 };
+    } else if (status === 'out-of-stock') {
+      query.availableQuantity = { $lte: 0 };
+    }
+    
+    // Search functionality
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { category: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const products = await Product.find(query)
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit))
+      .skip(skip);
+
+    const total = await Product.countDocuments(query);
+
+    res.json({
+      success: true,
+      count: products.length,
+      total,
+      pagination: {
+        current: parseInt(page),
+        pages: Math.ceil(total / parseInt(limit)),
+        hasNext: skip + products.length < total,
+        hasPrev: parseInt(page) > 1
+      },
+      data: products
     });
   } catch (error) {
     console.error(error);
@@ -379,6 +459,137 @@ router.post('/products/:id/restock', [
   }
 });
 
+// @route   POST /api/admin/products
+// @desc    Create a new product
+// @access  Private/Admin
+router.post('/products', [
+  body('name').notEmpty().withMessage('Product name is required'),
+  body('description').notEmpty().withMessage('Product description is required'),
+  body('category').isIn(['mini-drafter', 'lab-apron']).withMessage('Invalid category'),
+  body('price').isFloat({ min: 0 }).withMessage('Price must be a positive number'),
+  body('pricePerDay').isFloat({ min: 0 }).withMessage('Price per day must be a positive number'),
+  body('totalQuantity').isInt({ min: 1 }).withMessage('Total quantity must be at least 1'),
+  body('availableQuantity').isInt({ min: 0 }).withMessage('Available quantity cannot be negative'),
+  body('images').custom((value) => {
+    if (Array.isArray(value)) return true;
+    if (typeof value === 'string') return true;
+    throw new Error('Images must be an array or string');
+  }).withMessage('Images must be an array or string'),
+  body('specifications').optional().isObject().withMessage('Specifications must be an object'),
+  body('condition').optional().isIn(['new', 'good', 'fair', 'poor']).withMessage('Invalid condition')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    // Handle price precision before saving
+    if (req.body.price !== undefined) {
+      req.body.price = Number.isInteger(req.body.price) ? req.body.price : Math.round(req.body.price * 100) / 100;
+    }
+    
+    if (req.body.pricePerDay !== undefined) {
+      req.body.pricePerDay = Number.isInteger(req.body.pricePerDay) ? req.body.pricePerDay : Math.round(req.body.pricePerDay * 100) / 100;
+    }
+
+    const product = new Product(req.body);
+    await product.save();
+
+    res.status(201).json({
+      success: true,
+      data: product
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   PUT /api/admin/products/:id
+// @desc    Update a product
+// @access  Private/Admin
+router.put('/products/:id', [
+  body('name').optional().notEmpty().withMessage('Product name cannot be empty'),
+  body('description').optional().notEmpty().withMessage('Product description cannot be empty'),
+  body('category').optional().isIn(['mini-drafter', 'lab-apron']).withMessage('Invalid category'),
+  body('price').optional().isFloat({ min: 0 }).withMessage('Price must be a positive number'),
+  body('pricePerDay').optional().isFloat({ min: 0 }).withMessage('Price per day must be a positive number'),
+  body('totalQuantity').optional().isInt({ min: 1 }).withMessage('Total quantity must be at least 1'),
+  body('availableQuantity').optional().isInt({ min: 0 }).withMessage('Available quantity cannot be negative'),
+  body('images').optional().custom((value) => {
+    if (Array.isArray(value)) return true;
+    if (typeof value === 'string') return true;
+    throw new Error('Images must be an array or string');
+  }).withMessage('Images must be an array or string'),
+  body('specifications').optional().isObject().withMessage('Specifications must be an object'),
+  body('condition').optional().isIn(['new', 'good', 'fair', 'poor']).withMessage('Invalid condition')
+], async (req, res) => {
+  try {
+    console.log('PUT /api/admin/products/:id - Request body:', req.body);
+    console.log('PUT /api/admin/products/:id - Product ID:', req.params.id);
+    
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      console.log('Validation errors:', errors.array());
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    // Handle price precision before saving
+    if (req.body.price !== undefined) {
+      req.body.price = Number.isInteger(req.body.price) ? req.body.price : Math.round(req.body.price * 100) / 100;
+    }
+    
+    if (req.body.pricePerDay !== undefined) {
+      req.body.pricePerDay = Number.isInteger(req.body.pricePerDay) ? req.body.pricePerDay : Math.round(req.body.pricePerDay * 100) / 100;
+    }
+
+    const product = await Product.findById(req.params.id);
+    
+    if (!product) {
+      console.log('Product not found with ID:', req.params.id);
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    console.log('Found product:', product);
+    console.log('Updating with data:', req.body);
+    
+    Object.assign(product, req.body);
+    await product.save();
+
+    console.log('Product updated successfully');
+    res.json({
+      success: true,
+      data: product
+    });
+  } catch (error) {
+    console.error('Error updating product:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   DELETE /api/admin/products/:id
+// @desc    Delete a product
+// @access  Private/Admin
+router.delete('/products/:id', async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Soft delete - mark as inactive instead of actually deleting
+    product.isActive = false;
+    await product.save();
+
+    res.json({ success: true, message: 'Product deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // @route   POST /api/admin/products/:id/reduce-stock
 // @desc    Reduce product stock
 // @access  Private/Admin
@@ -424,7 +635,7 @@ router.post('/products/:id/reduce-stock', [
 // @desc    Update order status (Admin only)
 // @access  Private/Admin
 router.put('/orders/:id/status', [
-  body('status').isIn(['pending', 'confirmed', 'rented', 'returned', 'overdue', 'cancelled'])
+  body('status').isIn(['pending', 'confirmed', 'rented', 'delivered', 'returned', 'overdue', 'cancelled'])
     .withMessage('Invalid status')
 ], async (req, res) => {
   try {
@@ -450,7 +661,6 @@ router.put('/orders/:id/status', [
     // Handle inventory restoration when order is cancelled or returned
     if ((req.body.status === 'cancelled' && previousStatus !== 'cancelled') || 
         (req.body.status === 'returned' && previousStatus !== 'returned')) {
-      
       // Return items to inventory
       for (const item of order.items) {
         const product = await Product.findById(item.product._id);
@@ -467,6 +677,19 @@ router.put('/orders/:id/status', [
       success: true,
       data: order
     });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// TEMP DEBUG: Get all orders with full user and item info
+router.get('/debug-orders', async (req, res) => {
+  try {
+    const orders = await Order.find({})
+      .populate('user')
+      .populate('items.product');
+    res.json({ success: true, count: orders.length, data: orders });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });

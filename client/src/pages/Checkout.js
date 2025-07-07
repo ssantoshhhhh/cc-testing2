@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useForm } from 'react-hook-form';
 import { FiCreditCard, FiCalendar, FiMapPin, FiCheck } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import axios from '../axios';
 
 const Checkout = () => {
   const navigate = useNavigate();

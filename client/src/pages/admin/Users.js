@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from 'react-query';
 import { FiUsers, FiSearch, FiEye, FiMail, FiCalendar } from 'react-icons/fi';
-import axios from 'axios';
+import axios from '../../axios';
 
 const AdminUsers = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -19,7 +19,7 @@ const AdminUsers = () => {
     }
   );
 
-  const filteredUsers = users?.filter(user =>
+  const filteredUsers = users?.data?.filter(user =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { FiShoppingCart, FiSearch, FiEye, FiCheck, FiX, FiAlertCircle } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import axios from '../../axios'; // use the custom axios instance
+import axios from '../../axios'; // Use the custom axios instance for correct base URL
 
 const AdminOrders = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -142,9 +142,9 @@ const AdminOrders = () => {
     const nameMatch = name.includes(searchTerm.toLowerCase());
     const emailMatch = email.includes(searchTerm.toLowerCase());
     return idMatch || nameMatch || emailMatch;
-  });
+  }) || [];
 
-  const getStatusBadge = (order) => {
+  const getStatusBadge = (status) => {
     const statusConfig = {
       pending: { color: 'bg-yellow-100 text-yellow-800', icon: FiAlertCircle },
       confirmed: { color: 'bg-blue-100 text-blue-800', icon: FiCheck },
@@ -155,20 +155,13 @@ const AdminOrders = () => {
       overdue: { color: 'bg-red-100 text-red-800', icon: FiAlertCircle },
     };
 
-    const config = statusConfig[order.status] || statusConfig.pending;
+    const config = statusConfig[status] || statusConfig.pending;
     const Icon = config.icon;
-
-    let statusText = order.status.charAt(0).toUpperCase() + order.status.slice(1);
-    
-    // Show who cancelled the order if it's cancelled
-    if (order.status === 'cancelled' && order.cancelledBy) {
-      statusText = `Cancelled by ${order.cancelledBy.charAt(0).toUpperCase() + order.cancelledBy.slice(1)}`;
-    }
 
     return (
       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
         <Icon className="w-3 h-3 mr-1" />
-        {statusText}
+        {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
   };
@@ -416,7 +409,7 @@ const AdminOrders = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(order)}
+                        {getStatusBadge(order.status)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
@@ -457,14 +450,14 @@ const AdminOrders = () => {
                           )}
                           {order.status === 'rented' && (
                             <button
-                              onClick={() => handleStatusUpdate(order._id, 'returned')}
-                              className="text-green-600 hover:text-green-900"
-                              title="Mark as Returned"
+                              onClick={() => handleStatusUpdate(order._id, 'delivered')}
+                              className="text-blue-600 hover:text-blue-900"
+                              title="Mark as Delivered"
                             >
                               <FiCheck className="h-4 w-4" />
                             </button>
                           )}
-                          {order.status === 'delivered' && (
+                          {['rented', 'delivered'].includes(order.status) && (
                             <button
                               onClick={() => handleStatusUpdate(order._id, 'returned')}
                               className="text-green-600 hover:text-green-900"

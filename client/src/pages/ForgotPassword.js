@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { FiMail, FiArrowLeft, FiKey, FiEye, FiEyeOff } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import axios from '../axios';
 
 const ForgotPassword = () => {
   const [isLoading, setIsLoading] = useState(false);

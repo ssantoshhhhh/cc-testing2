@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
-import axios from 'axios';
+import axios from '../axios';
 import toast from 'react-hot-toast';
 
 const CartContext = createContext();

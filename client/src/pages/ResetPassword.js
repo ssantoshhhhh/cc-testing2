@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { FiLock, FiEye, FiEyeOff, FiArrowLeft } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import axios from '../axios';
 
 const ResetPassword = () => {
   const { token } = useParams();

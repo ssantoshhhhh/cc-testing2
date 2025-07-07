@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { FiShoppingCart, FiCalendar, FiStar, FiTruck, FiShield, FiRefreshCw } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import axios from '../axios';
 
 const ProductDetail = () => {
   const { id } = useParams();

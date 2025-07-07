@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { FiTrendingUp, FiSearch, FiPlus, FiMinus, FiAlertCircle, FiPackage } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import axios from '../../axios';
 
 const AdminInventory = () => {
   const [searchTerm, setSearchTerm] = useState('');

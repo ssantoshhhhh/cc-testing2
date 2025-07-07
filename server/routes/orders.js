@@ -100,6 +100,8 @@ router.post('/', [
         <h2>New Order Placed!</h2>
         <p><b>Order ID:</b> ${order._id}</p>
         <p><b>User:</b> ${user.name} (${user.email})</p>
+        <p><b>Contact Number:</b> ${user.phone}</p>
+        <p><b>Department/Location:</b> ${user.department || 'N/A'}</p>
         <p><b>Delivery Address:</b> ${order.deliveryAddress}</p>
         <p><b>Delivery Instructions:</b> ${order.deliveryInstructions || 'N/A'}</p>
         <p><b>Payment Method:</b> ${order.paymentMethod}</p>
@@ -114,7 +116,7 @@ router.post('/', [
         to: 'srkrcampusconnect@gmail.com',
         subject: `New Order Placed: #${order._id.toString().slice(-8).toUpperCase()}`,
         text:
-`A new order has been placed!\n\nOrder ID: ${order._id}\nUser: ${user.name} (${user.email})\nDelivery Address: ${order.deliveryAddress}\nDelivery Instructions: ${order.deliveryInstructions || 'N/A'}\nPayment Method: ${order.paymentMethod}\nTotal Amount: ₹${order.totalAmount}\n\nItems:\n${order.items.map(item => `- ${item.product.name} (x${item.quantity}) for ${order.rentalDays} days: ₹${item.totalPrice}`).join('\n')}\n\nPlaced at: ${order.createdAt}\n\nPlease check the admin dashboard for more details.`,
+`A new order has been placed!\n\nOrder ID: ${order._id}\nUser: ${user.name} (${user.email})\nContact Number: ${user.phone}\nDepartment/Location: ${user.department || 'N/A'}\nDelivery Address: ${order.deliveryAddress}\nDelivery Instructions: ${order.deliveryInstructions || 'N/A'}\nPayment Method: ${order.paymentMethod}\nTotal Amount: ₹${order.totalAmount}\n\nItems:\n${order.items.map(item => `- ${item.product.name} (x${item.quantity}) for ${order.rentalDays} days: ₹${item.totalPrice}`).join('\n')}\n\nPlaced at: ${order.createdAt}\n\nPlease check the admin dashboard for more details.`,
         html: htmlBody
       };
       await transporter.sendMail(mailOptions);

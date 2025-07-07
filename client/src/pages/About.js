@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { FaUsers, FaShieldAlt, FaClock, FaStar, FaGraduationCap, FaTools } from 'react-icons/fa';
 import { useQuery } from 'react-query';
-import axios from 'axios';
+import axios from '../axios';
 import { useAuth } from '../contexts/AuthContext';
 
 const About = () => {
@@ -75,15 +75,15 @@ const About = () => {
     },
     {
       name: 'Bhanu',
-      role: 'Software Tester',
+      role: 'Software Tester & Proposed Idea',
       description: 'Software Tester of the project Campus Connect',
       image: './bhanu.jpg'
     },
     {
       name: 'Lokesh',
-      role: 'Problem Statement Creator',
+      role: 'Apprach Design',
       description: 'The project Campus Connect was created by Lokesh',
-      image: 'https://via.placeholder.com/150x150?text=ER'
+      image: './lokesh.jpg'
     }
   ];
 

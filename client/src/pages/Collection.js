@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from 'react-query';
-import axios from 'axios';
+import axios from '../axios';
 import { FaSearch, FaFilter, FaSort, FaEye } from 'react-icons/fa';
 
 const Collection = () => {

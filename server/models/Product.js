@@ -65,6 +65,16 @@ const productSchema = new mongoose.Schema({
 // Update the updatedAt field before saving
 productSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
+  
+  // Handle price precision to avoid floating point issues
+  if (this.price !== undefined) {
+    this.price = Number.isInteger(this.price) ? this.price : Math.round(this.price * 100) / 100;
+  }
+  
+  if (this.pricePerDay !== undefined) {
+    this.pricePerDay = Number.isInteger(this.pricePerDay) ? this.pricePerDay : Math.round(this.pricePerDay * 100) / 100;
+  }
+  
   next();
 });
 

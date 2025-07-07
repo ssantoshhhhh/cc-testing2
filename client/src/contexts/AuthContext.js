@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import axios from '../axios';
 import toast from 'react-hot-toast';
 
 // Configure axios to send cookies with requests

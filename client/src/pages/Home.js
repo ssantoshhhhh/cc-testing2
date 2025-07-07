@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from 'react-query';
-import axios from 'axios';
+import axios from '../axios';
 import { FaArrowRight, FaStar, FaClock, FaShieldAlt } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext';
 
