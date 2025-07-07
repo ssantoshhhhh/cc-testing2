@@ -129,9 +129,19 @@ router.get('/dashboard', async (req, res) => {
 // @access  Private/Admin
 router.get('/users', async (req, res) => {
   try {
-    const { search, limit = 10, page = 1 } = req.query;
+    const { search, limit = 10, page = 1, status } = req.query;
     
     let query = { role: 'user' };
+    
+    // Add status filter
+    if (status && status !== 'all') {
+      if (status === 'active') {
+        query.isActive = true;
+      } else if (status === 'inactive') {
+        query.isActive = false;
+      }
+    }
+    
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
@@ -152,18 +162,35 @@ router.get('/users', async (req, res) => {
 
     // Aggregate order counts for each user
     const userIds = users.map(u => u._id);
+    
     // Get total orders per user
     const ordersAgg = await Order.aggregate([
       { $match: { user: { $in: userIds } } },
       { $group: { _id: '$user', totalRentals: { $sum: 1 } } }
     ]);
+    
+    // Get successful orders (confirmed, rented, returned) per user
+    const successfulAgg = await Order.aggregate([
+      { $match: { user: { $in: userIds }, status: { $in: ['confirmed', 'rented', 'returned'] } } },
+      { $group: { _id: '$user', successfulOrders: { $sum: 1 } } }
+    ]);
+    
+    // Get declined/cancelled orders per user
+    const declinedAgg = await Order.aggregate([
+      { $match: { user: { $in: userIds }, status: 'cancelled' } },
+      { $group: { _id: '$user', declinedOrders: { $sum: 1 } } }
+    ]);
+    
     // Get active rentals per user
     const activeAgg = await Order.aggregate([
       { $match: { user: { $in: userIds }, status: { $in: ['confirmed', 'rented'] } } },
       { $group: { _id: '$user', activeRentals: { $sum: 1 } } }
     ]);
+    
     // Convert to maps for quick lookup
     const ordersMap = Object.fromEntries(ordersAgg.map(o => [o._id.toString(), o.totalRentals]));
+    const successfulMap = Object.fromEntries(successfulAgg.map(s => [s._id.toString(), s.successfulOrders]));
+    const declinedMap = Object.fromEntries(declinedAgg.map(d => [d._id.toString(), d.declinedOrders]));
     const activeMap = Object.fromEntries(activeAgg.map(a => [a._id.toString(), a.activeRentals]));
 
     // Attach counts to each user
@@ -172,6 +199,8 @@ router.get('/users', async (req, res) => {
       return {
         ...user.toObject(),
         totalRentals: ordersMap[id] || 0,
+        successfulOrders: successfulMap[id] || 0,
+        declinedOrders: declinedMap[id] || 0,
         activeRentals: activeMap[id] || 0
       };
     });
@@ -251,6 +280,73 @@ router.put('/users/:id', [
     res.json({
       success: true,
       data: user
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   PATCH /api/admin/users/:id/toggle-status
+// @desc    Toggle user active status
+// @access  Private/Admin
+router.patch('/users/:id/toggle-status', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Toggle the isActive status
+    user.isActive = !user.isActive;
+    await user.save();
+
+    res.json({
+      success: true,
+      data: {
+        _id: user._id,
+        isActive: user.isActive
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   DELETE /api/admin/users/:id
+// @desc    Delete user (admin only)
+// @access  Private/Admin
+router.delete('/users/:id', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if user has any active orders
+    const activeOrders = await Order.find({
+      user: req.params.id,
+      status: { $in: ['confirmed', 'rented'] }
+    });
+
+    if (activeOrders.length > 0) {
+      return res.status(400).json({ 
+        message: 'Cannot delete user with active orders. Please handle active orders first.' 
+      });
+    }
+
+    // Delete user's orders first
+    await Order.deleteMany({ user: req.params.id });
+    
+    // Delete the user
+    await User.findByIdAndDelete(req.params.id);
+
+    res.json({
+      success: true,
+      message: 'User deleted successfully'
     });
   } catch (error) {
     console.error(error);

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { useQuery } from 'react-query';
-import { FiUsers, FiSearch, FiEye, FiMail, FiCalendar } from 'react-icons/fi';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { FiUsers, FiSearch, FiMail, FiCalendar, FiToggleLeft, FiToggleRight, FiTrash2 } from 'react-icons/fi';
 import axios from '../../axios';
 
 const AdminUsers = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
+  const queryClient = useQueryClient();
 
   const { data: users, isLoading, error } = useQuery(
     ['admin-users', filter],
@@ -18,6 +19,53 @@ const AdminUsers = () => {
       refetchOnWindowFocus: false,
     }
   );
+
+  // Toggle user status mutation
+  const toggleStatusMutation = useMutation(
+    async (userId) => {
+      const response = await axios.patch(`/api/admin/users/${userId}/toggle-status`);
+      return response.data;
+    },
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['admin-users']);
+      },
+    }
+  );
+
+  // Delete user mutation
+  const deleteUserMutation = useMutation(
+    async (userId) => {
+      const response = await axios.delete(`/api/admin/users/${userId}`);
+      return response.data;
+    },
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['admin-users']);
+      },
+    }
+  );
+
+  const handleToggleStatus = async (userId) => {
+    try {
+      await toggleStatusMutation.mutateAsync(userId);
+    } catch (error) {
+      console.error('Error toggling user status:', error);
+    }
+  };
+
+  const handleDeleteUser = async (userId, userName) => {
+    if (window.confirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`)) {
+      try {
+        await deleteUserMutation.mutateAsync(userId);
+      } catch (error) {
+        console.error('Error deleting user:', error);
+        if (error.response?.data?.message) {
+          alert(error.response.data.message);
+        }
+      }
+    }
+  };
 
   const filteredUsers = users?.data?.filter(user =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -181,8 +229,14 @@ const AdminUsers = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{user.totalRentals || 0} orders</div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-gray-900">{user.totalRentals || 0} total orders</div>
+                        <div className="text-sm text-green-600">
+                          {user.successfulOrders || 0} successful
+                        </div>
+                        <div className="text-sm text-red-600">
+                          {user.declinedOrders || 0} declined
+                        </div>
+                        <div className="text-sm text-blue-600">
                           {user.activeRentals || 0} active rentals
                         </div>
                       </td>
@@ -196,9 +250,32 @@ const AdminUsers = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button className="text-green-600 hover:text-green-900 mr-3">
-                          <FiEye className="h-4 w-4" />
-                        </button>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => handleToggleStatus(user._id)}
+                            disabled={toggleStatusMutation.isLoading}
+                            className={`p-2 rounded-lg transition-colors ${
+                              user.isActive
+                                ? 'text-orange-600 hover:text-orange-900 hover:bg-orange-50'
+                                : 'text-green-600 hover:text-green-900 hover:bg-green-50'
+                            }`}
+                            title={user.isActive ? 'Deactivate User' : 'Activate User'}
+                          >
+                            {user.isActive ? (
+                              <FiToggleLeft className="h-4 w-4" />
+                            ) : (
+                              <FiToggleRight className="h-4 w-4" />
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(user._id, user.name)}
+                            disabled={deleteUserMutation.isLoading}
+                            className="p-2 rounded-lg text-red-600 hover:text-red-900 hover:bg-red-50 transition-colors"
+                            title="Delete User"
+                          >
+                            <FiTrash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

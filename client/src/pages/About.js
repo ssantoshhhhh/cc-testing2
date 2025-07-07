@@ -69,7 +69,7 @@ const About = () => {
   const team = [
     {
       name: 'Santosh Seelaboina',
-      role: 'Developer',
+      role: 'Main Developer',
       description: 'Main Developer of the project Campus Connect',
       image: './santosh.jpg'
     },
