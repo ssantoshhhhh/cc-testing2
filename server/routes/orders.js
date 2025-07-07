@@ -346,7 +346,7 @@ router.put('/:id/cancel', protect, async (req, res) => {
       const htmlBody = `
         <h2>Order Cancellation Successful</h2>
         <p>Dear ${user.name},</p>
-        <p>Your order has been <b>successfully cancelled</b>.</p>
+        <p>Your <b>cancellation request is successful</b>.</p>
         <p><b>Order ID:</b> ${order._id}</p>
         <p><b>Delivery Address:</b> ${order.deliveryAddress}</p>
         <p><b>Delivery Instructions:</b> ${order.deliveryInstructions || 'N/A'}</p>
@@ -362,7 +362,7 @@ router.put('/:id/cancel', protect, async (req, res) => {
         to: user.email,
         subject: `Order Cancelled Successfully: #${order._id.toString().slice(-8).toUpperCase()}`,
         text:
-`Dear ${user.name},\n\nYour order has been successfully cancelled.\n\nOrder ID: ${order._id}\nDelivery Address: ${order.deliveryAddress}\nDelivery Instructions: ${order.deliveryInstructions || 'N/A'}\nPayment Method: ${order.paymentMethod}\nTotal Amount: ₹${order.totalAmount}\n\nYour items have been returned to inventory. Thank you for using our service!`,
+`Dear ${user.name},\n\nYour cancellation request is successful.\n\nOrder ID: ${order._id}\nDelivery Address: ${order.deliveryAddress}\nDelivery Instructions: ${order.deliveryInstructions || 'N/A'}\nPayment Method: ${order.paymentMethod}\nTotal Amount: ₹${order.totalAmount}\n\nYour items have been returned to inventory. Thank you for using our service!`,
         html: htmlBody
       };
       await transporter.sendMail(mailOptions);

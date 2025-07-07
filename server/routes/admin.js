@@ -754,9 +754,9 @@ router.put('/orders/:id/status', [
           `<li><b>${item.product.name}</b> (x${item.quantity}) for ${order.rentalDays} days: ₹${item.totalPrice}</li>`
         ).join('');
         const htmlBody = `
-          <h2>Your Order has been Cancelled</h2>
+          <h2>Your Order has been Declined</h2>
           <p>Dear ${user.name},</p>
-          <p>We regret to inform you that your order has been <b>cancelled</b> by the admin.</p>
+          <p>We regret to inform you that your order has been <b>declined</b> by the admin.</p>
           <p><b>Order ID:</b> ${order._id}</p>
           <p><b>Delivery Address:</b> ${order.deliveryAddress}</p>
           <p><b>Delivery Instructions:</b> ${order.deliveryInstructions || 'N/A'}</p>
@@ -770,9 +770,9 @@ router.put('/orders/:id/status', [
         const mailOptions = {
           from: process.env.EMAIL_USER,
           to: user.email,
-          subject: `Order Cancelled: #${order._id.toString().slice(-8).toUpperCase()}`,
+          subject: `Order Declined: #${order._id.toString().slice(-8).toUpperCase()}`,
           text:
-`Dear ${user.name},\n\nWe regret to inform you that your order has been cancelled by the admin.\n\nOrder ID: ${order._id}\nDelivery Address: ${order.deliveryAddress}\nDelivery Instructions: ${order.deliveryInstructions || 'N/A'}\nPayment Method: ${order.paymentMethod}\nTotal Amount: ₹${order.totalAmount}\n\nIf you have any questions, please contact support.`,
+`Dear ${user.name},\n\nWe regret to inform you that your order has been declined by the admin.\n\nOrder ID: ${order._id}\nDelivery Address: ${order.deliveryAddress}\nDelivery Instructions: ${order.deliveryInstructions || 'N/A'}\nPayment Method: ${order.paymentMethod}\nTotal Amount: ₹${order.totalAmount}\n\nIf you have any questions, please contact support.`,
           html: htmlBody
         };
         console.log('DEBUG: Sending cancellation email to:', user.email);
