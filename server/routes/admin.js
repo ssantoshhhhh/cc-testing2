@@ -4,6 +4,7 @@ const User = require('../models/User');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
 const { protect, authorize } = require('../middleware/auth');
+const nodemailer = require('nodemailer');
 
 const router = express.Router();
 
@@ -654,6 +655,8 @@ router.put('/orders/:id/status', [
     const previousStatus = order.status;
     order.status = req.body.status;
     
+    console.log('DEBUG: Admin status update - Previous status:', previousStatus, 'New status:', req.body.status);
+    
     if (req.body.status === 'cancelled') {
       order.cancelledBy = 'admin';
     }
@@ -668,6 +671,115 @@ router.put('/orders/:id/status', [
           product.availableQuantity += item.quantity;
           await product.save();
         }
+      }
+    }
+
+    // Send confirmation email if status changed to confirmed
+    if (previousStatus !== 'confirmed' && req.body.status === 'confirmed') {
+      console.log('DEBUG: Attempting to send confirmation email for order:', order._id);
+      try {
+        // Populate user for email
+        await order.populate('user');
+        const user = order.user;
+        console.log('DEBUG: User email for confirmation:', user.email);
+        console.log('DEBUG: User name for confirmation:', user.name);
+        
+        if (!user.email) {
+          console.error('DEBUG: User email is missing for order:', order._id);
+          throw new Error('User email not found');
+        }
+        
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+          }
+        });
+        const itemLines = order.items.map(item =>
+          `<li><b>${item.product.name}</b> (x${item.quantity}) for ${order.rentalDays} days: ₹${item.totalPrice}</li>`
+        ).join('');
+        const htmlBody = `
+          <h2>Your Order is Confirmed!</h2>
+          <p>Dear ${user.name},</p>
+          <p>Your order has been <b>confirmed</b> and will be processed soon.</p>
+          <p><b>Order ID:</b> ${order._id}</p>
+          <p><b>Delivery Address:</b> ${order.deliveryAddress}</p>
+          <p><b>Delivery Instructions:</b> ${order.deliveryInstructions || 'N/A'}</p>
+          <p><b>Payment Method:</b> ${order.paymentMethod}</p>
+          <p><b>Total Amount:</b> ₹${order.totalAmount}</p>
+          <p><b>Placed at:</b> ${order.createdAt}</p>
+          <h3>Items:</h3>
+          <ul>${itemLines}</ul>
+          <p>Thank you for choosing us!</p>
+        `;
+        const mailOptions = {
+          from: process.env.EMAIL_USER,
+          to: user.email,
+          subject: `Order Confirmed: #${order._id.toString().slice(-8).toUpperCase()}`,
+          text:
+`Dear ${user.name},\n\nYour order has been confirmed!\n\nOrder ID: ${order._id}\nDelivery Address: ${order.deliveryAddress}\nDelivery Instructions: ${order.deliveryInstructions || 'N/A'}\nPayment Method: ${order.paymentMethod}\nTotal Amount: ₹${order.totalAmount}\n\nWe will process your order soon. Thank you for choosing us!`,
+          html: htmlBody
+        };
+        console.log('DEBUG: Sending email to:', user.email);
+        await transporter.sendMail(mailOptions);
+        console.log('Order confirmation email sent to user:', user.email, 'for order:', order._id);
+      } catch (userMailErr) {
+        console.error('Failed to send order confirmation email to user for order', order._id, userMailErr);
+      }
+    }
+
+    // Send cancellation email if status changed to cancelled
+    if (previousStatus !== 'cancelled' && req.body.status === 'cancelled') {
+      console.log('DEBUG: Attempting to send cancellation email for order:', order._id);
+      try {
+        // Populate user for email
+        await order.populate('user');
+        const user = order.user;
+        console.log('DEBUG: User email for cancellation:', user.email);
+        
+        if (!user.email) {
+          console.error('DEBUG: User email is missing for order:', order._id);
+          throw new Error('User email not found');
+        }
+        
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+          }
+        });
+        const itemLines = order.items.map(item =>
+          `<li><b>${item.product.name}</b> (x${item.quantity}) for ${order.rentalDays} days: ₹${item.totalPrice}</li>`
+        ).join('');
+        const htmlBody = `
+          <h2>Your Order has been Cancelled</h2>
+          <p>Dear ${user.name},</p>
+          <p>We regret to inform you that your order has been <b>cancelled</b> by the admin.</p>
+          <p><b>Order ID:</b> ${order._id}</p>
+          <p><b>Delivery Address:</b> ${order.deliveryAddress}</p>
+          <p><b>Delivery Instructions:</b> ${order.deliveryInstructions || 'N/A'}</p>
+          <p><b>Payment Method:</b> ${order.paymentMethod}</p>
+          <p><b>Total Amount:</b> ₹${order.totalAmount}</p>
+          <p><b>Placed at:</b> ${order.createdAt}</p>
+          <h3>Items:</h3>
+          <ul>${itemLines}</ul>
+          <p>If you have any questions, please contact support.</p>
+        `;
+        const mailOptions = {
+          from: process.env.EMAIL_USER,
+          to: user.email,
+          subject: `Order Cancelled: #${order._id.toString().slice(-8).toUpperCase()}`,
+          text:
+`Dear ${user.name},\n\nWe regret to inform you that your order has been cancelled by the admin.\n\nOrder ID: ${order._id}\nDelivery Address: ${order.deliveryAddress}\nDelivery Instructions: ${order.deliveryInstructions || 'N/A'}\nPayment Method: ${order.paymentMethod}\nTotal Amount: ₹${order.totalAmount}\n\nIf you have any questions, please contact support.`,
+          html: htmlBody
+        };
+        console.log('DEBUG: Sending cancellation email to:', user.email);
+        await transporter.sendMail(mailOptions);
+        console.log('Order cancellation email sent to user:', user.email, 'for order:', order._id);
+      } catch (userMailErr) {
+        console.error('Failed to send order cancellation email to user for order', order._id, userMailErr);
       }
     }
 
