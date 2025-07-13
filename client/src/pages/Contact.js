@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { FaEnvelope, FaPhone, FaMapMarkerAlt, FaClock, FaPaperPlane } from 'react-icons/fa';
 import toast from 'react-hot-toast';
-import emailjs from 'emailjs-com';
 
 const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -17,23 +16,23 @@ const Contact = () => {
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     try {
-      const result = await emailjs.send(
-        'service_lmv5peg',
-        'template_sd4nh4d',
-        {
-          first_name: data.firstName,
-          last_name: data.lastName,
+      const response = await fetch('/api/public/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: data.firstName,
+          lastName: data.lastName,
           email: data.email,
           subject: data.subject,
           message: data.message,
-        },
-        'W9j5LMZW1Io_iLte2'
-      );
-      if (result.status === 200) {
+        })
+      });
+      const result = await response.json();
+      if (response.ok) {
         toast.success("Message sent successfully! We'll get back to you soon.");
         reset();
       } else {
-        toast.error('Failed to send message. Please try again.');
+        toast.error(result.message || 'Failed to send message. Please try again.');
       }
     } catch (error) {
       toast.error('Failed to send message. Please try again.');
@@ -55,18 +54,6 @@ const Contact = () => {
       content: '+1 (555) 123-4567',
       link: 'tel:+15551234567'
     },
-    {
-      icon: <FaMapMarkerAlt className="text-2xl" />,
-      title: 'Address',
-      content: '123 Campus Drive, University City, UC 12345',
-      link: null
-    },
-    {
-      icon: <FaClock className="text-2xl" />,
-      title: 'Hours',
-      content: 'Monday - Friday: 8:00 AM - 6:00 PM',
-      link: null
-    }
   ];
 
   return (
@@ -300,26 +287,6 @@ const Contact = () => {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Map Section */}
-        <div className="mt-16">
-          <div className="bg-white rounded-lg shadow-soft p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Find Us</h2>
-            <div className="bg-gray-200 rounded-lg overflow-hidden flex items-center justify-center" style={{ height: '400px' }}>
-              <iframe
-                title="SRKR Engineering College Map"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3825.234964479836!2d81.5079643148606!3d16.54074298861351!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a37a3b2e2e2e2e3%3A0x7e4e2e2e2e2e2e2e!2sSagi%20Rama%20Krishnam%20Raju%20Engineering%20College!5e0!3m2!1sen!2sin!4v1680000000000!5m2!1sen!2sin"
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                allowFullScreen=""
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              ></iframe>
-            </div>
-            <p className="text-center text-gray-600 mt-4">Sagi Rama Krishnam Raju Engineering College, Chinna-Amiram, Bhimavaram, Andhra Pradesh 534204</p>
           </div>
         </div>
       </div>

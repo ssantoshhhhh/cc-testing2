@@ -321,7 +321,7 @@ router.delete('/users/:id', async (req, res) => {
       console.error('Failed to send account deletion notification email:', emailError);
       // Continue with deletion even if email fails
     }
-
+    
     // Delete the user
     await User.findByIdAndDelete(req.params.id);
 

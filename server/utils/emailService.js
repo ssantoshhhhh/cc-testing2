@@ -238,9 +238,33 @@ const sendBuyRequestStatusNotification = async (recipientEmail, recipientName, s
   }
 };
 
+// Send contact form email to admin
+const sendContactEmail = async ({ firstName, lastName, email, subject, message }) => {
+  const mailOptions = {
+    from: `CampusConnect Contact <${process.env.EMAIL_USER}>`,
+    to: process.env.EMAIL_USER,
+    subject: `Contact Form: ${subject}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #333;">New Contact Form Submission</h2>
+        <p><strong>Name:</strong> ${firstName} ${lastName}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Subject:</strong> ${subject}</p>
+        <div style="background: #f8f9fa; padding: 16px; border-radius: 8px; margin: 16px 0;">
+          <p style="margin: 0; color: #333;"><strong>Message:</strong></p>
+          <p style="margin: 0; color: #333;">${message}</p>
+        </div>
+      </div>
+    `
+  };
+  await transporter.sendMail(mailOptions);
+};
+
 module.exports = {
   sendChatNotification,
   sendNewChatNotification,
   sendBuyRequestNotification,
   sendBuyRequestStatusNotification
-}; 
+};
+
+module.exports.sendContactEmail = sendContactEmail; 

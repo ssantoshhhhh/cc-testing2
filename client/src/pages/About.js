@@ -23,22 +23,22 @@ const About = () => {
   const stats = [
     { 
       number: statsLoading ? '...' : `${statsData?.data?.totalUsers || 0}+`, 
-      label: 'Happy Students', 
+      label: 'Active Students', 
       icon: <FaUsers className="text-3xl" /> 
     },
     { 
       number: statsLoading ? '...' : `${statsData?.data?.totalProducts || 0}+`, 
-      label: 'Equipment Items', 
+      label: 'Items Listed', 
       icon: <FaTools className="text-3xl" /> 
     },
     { 
       number: statsLoading ? '...' : `${statsData?.data?.totalOrders || 0}+`, 
-      label: 'Successful Rentals', 
+      label: 'Successful Sales', 
       icon: <FaStar className="text-3xl" /> 
     },
     { 
       number: statsLoading ? '...' : `${statsData?.data?.activeRentals || 0}+`, 
-      label: 'Active Rentals', 
+      label: 'Active Listings', 
       icon: <FaClock className="text-3xl" /> 
     },
   ];
@@ -46,23 +46,23 @@ const About = () => {
   const values = [
     {
       icon: <FaShieldAlt className="text-2xl" />,
-      title: 'Quality & Safety',
-      description: 'All equipment is thoroughly inspected and sanitized before each rental to ensure your safety and satisfaction.'
+      title: 'Trust & Safety',
+      description: 'A secure, student-only platform for buying, selling, and trading on campus.'
     },
     {
       icon: <FaClock className="text-2xl" />,
       title: 'Convenience',
-      description: 'Easy online booking system with flexible rental periods to fit your academic schedule.'
+      description: 'Easily list, browse, and connect with fellow students for quick deals.'
     },
     {
       icon: <FaGraduationCap className="text-2xl" />,
-      title: 'Student-Focused',
-      description: 'Designed specifically for students with affordable pricing and campus-friendly policies.'
+      title: 'Student Empowerment',
+      description: 'Helping students save money, declutter, and find what they need from their own community.'
     },
     {
       icon: <FaStar className="text-2xl" />,
-      title: 'Excellence',
-      description: 'Committed to providing the best rental experience with premium equipment and excellent service.'
+      title: 'Community & Sustainability',
+      description: 'Encouraging responsible reuse and building a supportive campus network.'
     }
   ];
 
@@ -70,19 +70,19 @@ const About = () => {
     {
       name: 'Santosh Seelaboina',
       role: 'Main Developer',
-      description: 'Main Developer of the project Campus Connect',
+      description: 'Main Developer of the Campus Connect marketplace project',
       image: './santosh.jpg'
     },
     {
       name: 'Bhanu',
       role: 'Software Tester & Proposed Idea',
-      description: 'Software Tester of the project Campus Connect',
+      description: 'Software Tester and idea contributor for Campus Connect',
       image: './bhanu.jpg'
     },
     {
       name: 'Lokesh',
       role: 'Apprach Design',
-      description: 'The project Campus Connect was created by Lokesh',
+      description: 'Designed the approach and contributed to Campus Connect',
       image: './lokesh.jpg'
     }
   ];
@@ -90,14 +90,13 @@ const About = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-green-50 to-green-100 py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <section className="min-h-[60vh] flex items-center justify-center bg-gradient-to-br from-green-200 via-green-50 to-green-300">
+        <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center text-center bg-white/40 backdrop-blur-md rounded-3xl border border-white/30 shadow-2xl p-10" style={{boxShadow:'0 8px 32px 0 rgba(31, 38, 135, 0.18)'}}>
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
             About Campus Connect
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            We're revolutionizing how students access academic equipment. Our mission is to make 
-            quality tools and supplies accessible to every student, promoting learning and innovation.
+            Campus Connect is your campus marketplace for buying, selling, and trading everything students need—textbooks, electronics, furniture, and more. We connect students to make campus life easier, more affordable, and more sustainable.
           </p>
         </div>
       </section>
@@ -109,34 +108,29 @@ const About = () => {
             <div>
               <h2 className="text-3xl font-bold text-gray-900 mb-6">Our Mission</h2>
               <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-                Campus Connect was born from a simple observation: students often struggle to access 
-                the equipment they need for their studies. Whether it's a mini drafter for engineering 
-                drawings or a lab apron for chemistry experiments, we believe every student should have 
-                access to quality tools without the burden of ownership.
+                Campus Connect was created to help students buy, sell, and trade with each other easily and safely. We noticed students often have items they no longer need, while others are searching for affordable options. Our platform bridges that gap, making it simple to connect and deal within your own campus community.
               </p>
               <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-                We're committed to building a sustainable, student-friendly platform that not only 
-                provides access to equipment but also promotes responsible resource sharing and 
-                environmental consciousness.
+                We’re committed to building a sustainable, student-friendly marketplace that encourages responsible reuse, supports student budgets, and builds a stronger campus network.
               </p>
               <Link
                 to="/collection"
                 className="btn-primary text-lg px-8 py-3 inline-flex items-center"
               >
-                Explore Our Collection
+                Browse Marketplace
               </Link>
             </div>
             <div className="relative">
-              <div className="bg-green-100 rounded-2xl p-8">
+              <div className="bg-green-100 rounded-2xl p-8 shadow-xl border border-white/30 backdrop-blur-md" style={{boxShadow:'0 4px 24px 0 rgba(31, 38, 135, 0.10)'}}>
                 <div className="text-center space-y-4">
-                  <div className="w-32 h-32 mx-auto bg-green-200 rounded-full flex items-center justify-center">
-                    <span className="text-4xl">🎓</span>
+                  <div className="w-32 h-32 mx-auto bg-green-200 rounded-full flex items-center justify-center text-6xl shadow-lg">
+                    <span className="">🛒</span>
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900">
-                    Empowering Students
+                    Connecting Students
                   </h3>
                   <p className="text-gray-600">
-                    Making quality education accessible through affordable equipment rental
+                    Making campus life easier, more affordable, and more sustainable for everyone
                   </p>
                 </div>
               </div>
@@ -157,8 +151,8 @@ const About = () => {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="w-20 h-20 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center text-green-600">
+              <div key={index} className="text-center bg-white/70 rounded-2xl p-6 shadow-xl border border-white/30 backdrop-blur-md hover:scale-105 hover:-translate-y-1 hover:shadow-2xl transition-all duration-300" style={{boxShadow:'0 4px 24px 0 rgba(31, 38, 135, 0.10)'}}>
+                <div className="w-20 h-20 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center text-green-600 text-4xl shadow-lg">
                   {stat.icon}
                 </div>
                 <div className="text-3xl font-bold text-gray-900 mb-2">{stat.number}</div>
@@ -181,8 +175,8 @@ const About = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {values.map((value, index) => (
-              <div key={index} className="text-center p-6 rounded-xl bg-gray-50 hover:bg-green-50 transition-colors duration-300">
-                <div className="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center text-green-600">
+              <div key={index} className="text-center p-8 rounded-2xl bg-white/60 backdrop-blur-md border border-white/30 shadow-xl hover:scale-105 hover:-translate-y-1 hover:shadow-2xl transition-all duration-300" style={{boxShadow:'0 4px 24px 0 rgba(31, 38, 135, 0.10)'}}>
+                <div className="w-20 h-20 mx-auto mb-6 bg-green-100 rounded-full flex items-center justify-center text-green-600 text-4xl shadow-lg">
                   {value.icon}
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">{value.title}</h3>
@@ -205,8 +199,8 @@ const About = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {team.map((member, index) => (
-              <div key={index} className="text-center">
-                <div className="w-32 h-32 mx-auto mb-6 rounded-full overflow-hidden">
+              <div key={index} className="text-center bg-white/70 rounded-2xl p-8 shadow-xl border border-white/30 backdrop-blur-md hover:scale-105 hover:-translate-y-1 hover:shadow-2xl transition-all duration-300" style={{boxShadow:'0 4px 24px 0 rgba(31, 38, 135, 0.10)'}}>
+                <div className="w-32 h-32 mx-auto mb-6 rounded-full overflow-hidden shadow-lg">
                   {member.name === 'Santosh Seelaboina' ? (
                     <a
                       href="https://santosh-a6qm.onrender.com/"

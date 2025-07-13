@@ -516,7 +516,7 @@ router.post('/:id/rate-seller', protect, [
         seller: product.seller,
         buyerRating: { $exists: true, $ne: null }
       });
-      
+    
       const totalRating = sellerProducts.reduce((sum, p) => sum + p.buyerRating, 0);
       seller.sellerRating = totalRating / sellerProducts.length;
       seller.sellerRatingCount = sellerProducts.length;

@@ -107,11 +107,11 @@ const userSchema = new mongoose.Schema({
   },
   // Rating counts for averaging
   sellerRatingCount: {
-    type: Number,
+        type: Number,
     default: 0
-  },
+      },
   buyerRatingCount: {
-    type: Number,
+        type: Number,
     default: 0
   },
   resetPasswordToken: String,

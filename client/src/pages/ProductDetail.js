@@ -299,11 +299,11 @@ const ProductDetail = () => {
                     <span className="text-gray-600">Negotiable:</span>
                     <span className="ml-2 font-medium">{product.isNegotiable ? 'Yes' : 'No'}</span>
                   </div>
-                </div>
-              </div>
+                    </div>
+                  </div>
 
               {/* Seller Information */}
-              <div className="bg-green-50 p-4 rounded-lg">
+                  <div className="bg-green-50 p-4 rounded-lg">
                 <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
                   <FiUser className="mr-2 text-green-600" />
                   Seller Information
@@ -353,8 +353,8 @@ const ProductDetail = () => {
                     <div className="flex items-center space-x-2">
                       <FaWhatsapp className="text-green-600" />
                       <span className="text-gray-700">{product.contactInfo.whatsapp}</span>
-                    </div>
-                  )}
+                </div>
+              )}
                 </div>
               </div>
 
@@ -396,9 +396,9 @@ const ProductDetail = () => {
                   </button>
                 )}
               </div>
+              </div>
             </div>
           </div>
-        </div>
 
         {/* Contact Modal */}
         {showContactModal && (
