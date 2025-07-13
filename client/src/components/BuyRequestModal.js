@@ -62,9 +62,9 @@ const BuyRequestModal = ({ isOpen, onClose, product, seller }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <div className="bg-black-800 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-primary-700">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
+        <div className="flex items-center justify-between p-4 border-b border-primary-700 bg-black-900">
           <div className="flex items-center space-x-3">
             {seller?.profilePicture ? (
               <img
@@ -77,17 +77,17 @@ const BuyRequestModal = ({ isOpen, onClose, product, seller }) => {
                 }}
               />
             ) : null}
-            <div className={`w-10 h-10 bg-green-100 rounded-full flex items-center justify-center ${seller?.profilePicture ? 'hidden' : ''}`}>
-              <FiUser className="text-green-600" />
+            <div className={`w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center ${seller?.profilePicture ? 'hidden' : ''}`}>
+              <FiUser className="text-primary-600" />
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">Buy Request</h3>
-              <p className="text-sm text-gray-500">Send to {seller?.name}</p>
+              <h3 className="font-semibold text-primary-500">Buy Request</h3>
+              <p className="text-sm text-primary-200">Send to {seller?.name}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-primary-200 hover:text-primary-500 transition-colors"
           >
             <FiX className="w-6 h-6" />
           </button>
@@ -124,7 +124,7 @@ const BuyRequestModal = ({ isOpen, onClose, product, seller }) => {
               onChange={handleInputChange}
               min="0"
               step="0.01"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="Enter your offer"
               required
             />
@@ -140,7 +140,7 @@ const BuyRequestModal = ({ isOpen, onClose, product, seller }) => {
               name="isNegotiable"
               checked={formData.isNegotiable}
               onChange={handleInputChange}
-              className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
             />
             <label className="ml-2 block text-sm text-gray-700">
               Price is negotiable
@@ -159,7 +159,7 @@ const BuyRequestModal = ({ isOpen, onClose, product, seller }) => {
               onChange={handleInputChange}
               rows="4"
               maxLength="500"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="Tell the seller why you're interested in this item..."
             />
             <p className="text-xs text-gray-500 mt-1">
@@ -168,8 +168,8 @@ const BuyRequestModal = ({ isOpen, onClose, product, seller }) => {
           </div>
 
           {/* Seller Info */}
-          <div className="bg-blue-50 p-3 rounded-lg">
-            <h5 className="font-medium text-blue-900 mb-2">Seller Information</h5>
+          <div className="bg-primary-50 p-3 rounded-lg">
+            <h5 className="font-medium text-primary-900 mb-2">Seller Information</h5>
             <div className="space-y-1 text-sm">
               <p><span className="font-medium">Name:</span> {seller?.name}</p>
               <p><span className="font-medium">Contact:</span> {product?.contactInfo?.phone}</p>
@@ -192,7 +192,7 @@ const BuyRequestModal = ({ isOpen, onClose, product, seller }) => {
             <button
               type="submit"
               disabled={createBuyRequest.isLoading}
-              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {createBuyRequest.isLoading ? 'Sending...' : 'Send Request'}
             </button>

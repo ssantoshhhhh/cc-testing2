@@ -144,7 +144,7 @@ const BuyRequests = () => {
                 onClick={() => setSelectedStatus(status)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   selectedStatus === status
-                    ? 'bg-green-600 text-white'
+                    ? 'bg-red-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -178,8 +178,8 @@ const BuyRequests = () => {
                             }}
                           />
                         ) : null}
-                        <div className={`w-12 h-12 bg-green-100 rounded-full flex items-center justify-center ${otherUser.profilePicture ? 'hidden' : ''}`}>
-                          <FiUser className="text-green-600" />
+                        <div className={`w-12 h-12 bg-red-100 rounded-full flex items-center justify-center ${otherUser.profilePicture ? 'hidden' : ''}`}>
+                          <FiUser className="text-red-600" />
                         </div>
                         
                         <div className="flex-1">
@@ -207,7 +207,7 @@ const BuyRequests = () => {
                             <div>
                               <h4 className="font-medium text-gray-900">{request.product.title}</h4>
                               <p className="text-sm text-gray-600">Original Price: ₹{request.product.price}</p>
-                              <p className="text-sm text-green-600 font-medium">
+                              <p className="text-sm text-red-600 font-medium">
                                 Offered Price: ₹{request.offeredPrice}
                               </p>
                             </div>
@@ -244,7 +244,7 @@ const BuyRequests = () => {
                         {isSeller && request.status === 'accepted' && (
                           <button
                             onClick={() => handleStatusUpdate(request._id, 'completed')}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
                           >
                             Mark Completed
                           </button>

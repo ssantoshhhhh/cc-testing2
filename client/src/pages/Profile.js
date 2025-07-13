@@ -219,7 +219,7 @@ const Profile = () => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           {/* Header */}
-          <div className="bg-green-600 px-6 py-8">
+          <div className="bg-black px-6 py-8">
             <div className="flex items-center space-x-4">
               {profilePictureUrl ? (
                 <img
@@ -231,12 +231,12 @@ const Profile = () => {
                 />
               ) : (
                 <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center">
-                  <FiUser className="w-8 h-8 text-green-600" />
+                  <FiUser className="w-8 h-8 text-black" />
                 </div>
               )}
               <div>
                 <h1 className="text-2xl font-bold text-white">{user?.name}</h1>
-                <p className="text-green-100">{user?.email}</p>
+                <p className="text-black">{user?.email}</p>
               </div>
             </div>
           </div>
@@ -247,7 +247,7 @@ const Profile = () => {
               {!isEditing && (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-green-700 bg-green-100 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                  className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
                 >
                   <FiEdit2 className="mr-2 h-4 w-4" />
                   Edit Profile
@@ -358,7 +358,7 @@ const Profile = () => {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black disabled:opacity-50"
                   >
                     <FiSave className="mr-2 h-4 w-4" />
                     {isLoading ? 'Saving...' : 'Save Changes'}
@@ -366,7 +366,7 @@ const Profile = () => {
                   <button
                     type="button"
                     onClick={handleCancelEdit}
-                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
                   >
                     <FiX className="mr-2 h-4 w-4" />
                     Cancel
@@ -380,68 +380,68 @@ const Profile = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Marketplace Statistics</h3>
               {marketplaceLoading ? (
                 <div className="flex items-center justify-center h-32">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <div className="bg-green-50 p-4 rounded-lg">
+                  <div className="bg-black p-4 rounded-lg">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+                        <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
                           <span className="text-white font-semibold text-sm">📦</span>
                         </div>
                       </div>
                       <div className="ml-4">
                         <p className="text-sm font-medium text-gray-900">Total Listings</p>
-                        <p className="text-2xl font-semibold text-green-600">
+                        <p className="text-2xl font-semibold text-black">
                           {totalListings}
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="bg-black p-4 rounded-lg">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                        <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
                           <span className="text-white font-semibold text-sm">🔄</span>
                         </div>
                       </div>
                       <div className="ml-4">
                         <p className="text-sm font-medium text-gray-900">Active Listings</p>
-                        <p className="text-2xl font-semibold text-blue-600">
+                        <p className="text-2xl font-semibold text-black">
                           {activeListings}
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-orange-50 p-4 rounded-lg">
+                  <div className="bg-black p-4 rounded-lg">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center">
+                        <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
                           <span className="text-white font-semibold text-sm">💰</span>
                         </div>
                       </div>
                       <div className="ml-4">
                         <p className="text-sm font-medium text-gray-900">Total Sales</p>
-                        <p className="text-2xl font-semibold text-orange-600">
+                        <p className="text-2xl font-semibold text-black">
                           ₹{totalSales}
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-purple-50 p-4 rounded-lg">
+                  <div className="bg-black p-4 rounded-lg">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                        <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
                           <span className="text-white font-semibold text-sm">⭐</span>
                         </div>
                       </div>
                       <div className="ml-4">
                         <p className="text-sm font-medium text-gray-900">Seller Rating</p>
-                        <p className="text-lg font-semibold text-purple-600">
+                        <p className="text-lg font-semibold text-black">
                           {sellerRating.toFixed(1)}/5.0
                         </p>
                       </div>
@@ -449,48 +449,48 @@ const Profile = () => {
                   </div>
 
                   {/* Additional Statistics */}
-                  <div className="bg-yellow-50 p-4 rounded-lg">
+                  <div className="bg-black p-4 rounded-lg">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-yellow-600 rounded-full flex items-center justify-center">
+                        <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
                           <span className="text-white font-semibold text-sm">🛒</span>
                         </div>
                       </div>
                       <div className="ml-4">
                         <p className="text-sm font-medium text-gray-900">Total Purchases</p>
-                        <p className="text-2xl font-semibold text-yellow-600">
+                        <p className="text-2xl font-semibold text-black">
                           {totalPurchases}
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-indigo-50 p-4 rounded-lg">
+                  <div className="bg-black p-4 rounded-lg">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center">
+                        <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
                           <span className="text-white font-semibold text-sm">📊</span>
                         </div>
                       </div>
                       <div className="ml-4">
                         <p className="text-sm font-medium text-gray-900">Total Transactions</p>
-                        <p className="text-2xl font-semibold text-indigo-600">
+                        <p className="text-2xl font-semibold text-black">
                           {totalTransactions}
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="bg-black p-4 rounded-lg">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center">
+                        <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
                           <span className="text-white font-semibold text-sm">📅</span>
                         </div>
                       </div>
                       <div className="ml-4">
                         <p className="text-sm font-medium text-gray-900">Member Since</p>
-                        <p className="text-lg font-semibold text-gray-600">
+                        <p className="text-lg font-semibold text-black">
                           {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
                         </p>
                       </div>
@@ -509,10 +509,10 @@ const Profile = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Link
                   to="/add-product"
-                  className="bg-green-50 border border-green-200 rounded-lg p-4 hover:bg-green-100 transition-colors"
+                  className="bg-black border border-gray-200 rounded-lg p-4 hover:bg-gray-100 transition-colors"
                 >
                   <div className="flex items-center">
-                    <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
+                    <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
                       <span className="text-white font-semibold">+</span>
                     </div>
                     <div className="ml-4">
@@ -524,10 +524,10 @@ const Profile = () => {
 
                 <Link
                   to="/seller-dashboard"
-                  className="bg-blue-50 border border-blue-200 rounded-lg p-4 hover:bg-blue-100 transition-colors"
+                  className="bg-black border border-gray-200 rounded-lg p-4 hover:bg-gray-100 transition-colors"
                 >
                   <div className="flex items-center">
-                    <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
                       <span className="text-white font-semibold">📊</span>
                     </div>
                     <div className="ml-4">
@@ -539,10 +539,10 @@ const Profile = () => {
 
                 <Link
                   to="/buyer-dashboard"
-                  className="bg-purple-50 border border-purple-200 rounded-lg p-4 hover:bg-purple-100 transition-colors"
+                  className="bg-black border border-gray-200 rounded-lg p-4 hover:bg-gray-100 transition-colors"
                 >
                   <div className="flex items-center">
-                    <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+                    <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
                       <span className="text-white font-semibold">🛒</span>
                     </div>
                     <div className="ml-4">
@@ -554,10 +554,10 @@ const Profile = () => {
 
                 <Link
                   to="/collection"
-                  className="bg-orange-50 border border-orange-200 rounded-lg p-4 hover:bg-orange-100 transition-colors"
+                  className="bg-black border border-gray-200 rounded-lg p-4 hover:bg-gray-100 transition-colors"
                 >
                   <div className="flex items-center">
-                    <div className="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center">
+                    <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
                       <span className="text-white font-semibold">🔍</span>
                     </div>
                     <div className="ml-4">
@@ -648,7 +648,7 @@ const Profile = () => {
                   </button>
                   <button
                     onClick={handleCloseDeleteModal}
-                    className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                    className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
                   >
                     Cancel
                   </button>
@@ -683,7 +683,7 @@ const Profile = () => {
                         if (deleteOtpError) setDeleteOtpError('');
                       }}
                       className={`w-full px-3 py-2 border border-gray-300 rounded-md text-center text-2xl tracking-widest ${
-                        deleteOtpError ? 'border-red-500 focus:ring-red-500' : 'focus:ring-green-500 focus:border-green-500'
+                        deleteOtpError ? 'border-red-500 focus:ring-red-500' : 'focus:ring-black focus:border-black'
                       } focus:outline-none`}
                       placeholder="000000"
                       maxLength={6}
@@ -714,7 +714,7 @@ const Profile = () => {
                     <button
                       type="button"
                       onClick={handleCloseDeleteModal}
-                      className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                      className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
                     >
                       Cancel
                     </button>
@@ -724,7 +724,7 @@ const Profile = () => {
                       type="button"
                       onClick={handleResendDeleteOtp}
                       disabled={resendDisabled || isLoading}
-                      className="text-sm text-green-600 hover:text-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="text-sm text-black hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {resendDisabled ? `Resend in ${countdown}s` : 'Resend OTP'}
                     </button>

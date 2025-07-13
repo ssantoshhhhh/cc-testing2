@@ -245,7 +245,7 @@ const Contact = () => {
               {contactInfo.map((info, index) => (
                 <div key={index} className="bg-white rounded-lg shadow-soft p-6">
                   <div className="flex items-start space-x-4">
-                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-green-600 flex-shrink-0">
+                    <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center text-red-600 flex-shrink-0">
                       {info.icon}
                     </div>
                     <div>
@@ -253,7 +253,7 @@ const Contact = () => {
                       {info.link ? (
                         <a
                           href={info.link}
-                          className="text-gray-600 hover:text-green-600 transition-colors duration-200"
+                          className="text-gray-600 hover:text-red-600 transition-colors duration-200"
                         >
                           {info.content}
                         </a>

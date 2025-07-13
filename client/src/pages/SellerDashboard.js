@@ -201,7 +201,7 @@ const SellerDashboard = () => {
         <div className="mb-8">
           <Link
             to="/add-product"
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
           >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -226,7 +226,7 @@ const SellerDashboard = () => {
                 <div className="mt-6">
                   <Link
                     to="/add-product"
-                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
                   >
                     Add Product
                   </Link>
@@ -260,7 +260,7 @@ const SellerDashboard = () => {
                       <div className="mt-4 flex space-x-2">
                         <Link
                           to={`/product/${product._id}`}
-                          className="flex-1 bg-blue-600 text-white text-center py-2 px-3 rounded text-sm hover:bg-blue-700"
+                          className="flex-1 bg-red-600 text-white text-center py-2 px-3 rounded text-sm hover:bg-red-700"
                         >
                           View
                         </Link>
@@ -377,7 +377,7 @@ const SellerDashboard = () => {
                   </button>
                   <button
                     onClick={() => rateBuyer(ratingModal.product._id, 5, "Great buyer!")}
-                    className="flex-1 bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
+                    className="flex-1 bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700"
                   >
                     Submit Rating
                   </button>
