@@ -83,8 +83,8 @@ const BuyerDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
-              <div className="p-2 bg-black-100 rounded-lg">
-                <svg className="w-6 h-6 text-black-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                 </svg>
               </div>
@@ -97,8 +97,8 @@ const BuyerDashboard = () => {
 
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
-              <div className="p-2 bg-black-100 rounded-lg">
-                <svg className="w-6 h-6 text-black-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
@@ -111,8 +111,8 @@ const BuyerDashboard = () => {
 
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
-              <div className="p-2 bg-black-100 rounded-lg">
-                <svg className="w-6 h-6 text-black-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                 </svg>
               </div>
@@ -125,8 +125,8 @@ const BuyerDashboard = () => {
 
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
-              <div className="p-2 bg-black-100 rounded-lg">
-                <svg className="w-6 h-6 text-black-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="p-2 bg-indigo-100 rounded-lg">
+                <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                 </svg>
               </div>
@@ -146,7 +146,7 @@ const BuyerDashboard = () => {
             {purchasedItems.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-500">No purchases yet. Start shopping!</p>
-                <Link to="/collection" className="mt-4 inline-block bg-black-600 text-white px-4 py-2 rounded">
+                <Link to="/collection" className="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded">
                   Browse Products
                 </Link>
               </div>
@@ -168,7 +168,7 @@ const BuyerDashboard = () => {
                       <p className="text-sm text-gray-500 mt-1">₹{product.price}</p>
                       <div className="flex items-center mt-2">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          product.isSold ? 'bg-black-100 text-black-800' : 'bg-gray-100 text-gray-800'
+                          product.isSold ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                         }`}>
                           {product.isSold ? 'Purchased' : 'In Progress'}
                         </span>
@@ -182,14 +182,14 @@ const BuyerDashboard = () => {
                       <div className="mt-4 flex space-x-2">
                         <Link
                           to={`/product/${product._id}`}
-                          className="flex-1 bg-black-600 text-white text-center py-2 px-3 rounded text-sm hover:bg-black-700"
+                          className="flex-1 bg-blue-600 text-white text-center py-2 px-3 rounded text-sm hover:bg-blue-700"
                         >
                           View Details
                         </Link>
                         {product.isSold && !product.buyerRating && (
                           <button
                             onClick={() => setRatingModal({ show: true, product })}
-                            className="flex-1 bg-black-600 text-white py-2 px-3 rounded text-sm hover:bg-black-700"
+                            className="flex-1 bg-yellow-600 text-white py-2 px-3 rounded text-sm hover:bg-yellow-700"
                           >
                             Rate Seller
                           </button>
@@ -211,7 +211,7 @@ const BuyerDashboard = () => {
             {favorites.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-500">No favorites yet.</p>
-                <Link to="/collection" className="mt-4 inline-block bg-black-600 text-white px-4 py-2 rounded">
+                <Link to="/collection" className="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded">
                   Browse Products
                 </Link>
               </div>
@@ -233,14 +233,14 @@ const BuyerDashboard = () => {
                       <p className="text-sm text-gray-500 mt-1">₹{product.price}</p>
                       <div className="flex items-center mt-2">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          product.isSold ? 'bg-red-100 text-red-800' : 'bg-black-100 text-black-800'
+                          product.isSold ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
                         }`}>
                           {product.isSold ? 'Sold' : 'Available'}
                         </span>
                       </div>
                       <Link
                         to={`/product/${product._id}`}
-                        className="mt-4 inline-block w-full bg-black-600 text-white text-center py-2 px-3 rounded text-sm hover:bg-black-700"
+                        className="mt-4 inline-block w-full bg-blue-600 text-white text-center py-2 px-3 rounded text-sm hover:bg-blue-700"
                       >
                         View Product
                       </Link>
@@ -285,7 +285,7 @@ const BuyerDashboard = () => {
                   </button>
                   <button
                     onClick={() => rateSeller(ratingModal.product._id, 5, "Great seller!")}
-                    className="flex-1 bg-black-600 text-white py-2 px-4 rounded hover:bg-black-700"
+                    className="flex-1 bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
                   >
                     Submit Rating
                   </button>

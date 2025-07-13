@@ -33,26 +33,26 @@ import AdminProducts from './pages/admin/Products';
 function App() {
   return (
     <AuthProvider>
-      <ScrollToTop />
-      <Layout>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Home />} />
-          <Route path="/collection" element={<Collection />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/product/:id" element={<ProductDetail />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password/:token" element={<ResetPassword />} />
-          
-          {/* Protected Routes */}
-          <Route path="/profile" element={
-            <PrivateRoute>
-              <Profile />
-            </PrivateRoute>
-          } />
+        <ScrollToTop />
+        <Layout>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<Home />} />
+            <Route path="/collection" element={<Collection />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/product/:id" element={<ProductDetail />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
+            
+            {/* Protected Routes */}
+            <Route path="/profile" element={
+              <PrivateRoute>
+                <Profile />
+              </PrivateRoute>
+            } />
           
           {/* Marketplace Routes */}
           <Route path="/seller-dashboard" element={
@@ -61,44 +61,44 @@ function App() {
             </PrivateRoute>
           } />
           <Route path="/buyer-dashboard" element={
-            <PrivateRoute>
+              <PrivateRoute>
               <BuyerDashboard />
-            </PrivateRoute>
-          } />
+              </PrivateRoute>
+            } />
           <Route path="/add-product" element={
-            <PrivateRoute>
+              <PrivateRoute>
               <AddProduct />
-            </PrivateRoute>
-          } />
+              </PrivateRoute>
+            } />
           <Route path="/chats" element={
-            <PrivateRoute>
+              <PrivateRoute>
               <Chats />
-            </PrivateRoute>
-          } />
+              </PrivateRoute>
+            } />
           <Route path="/buy-requests" element={
-            <PrivateRoute>
+              <PrivateRoute>
               <BuyRequests />
-            </PrivateRoute>
-          } />
-          
-          {/* Admin Routes */}
-          <Route path="/admin" element={
-            <AdminRoute>
-              <AdminDashboard />
-            </AdminRoute>
-          } />
-          <Route path="/admin/users" element={
-            <AdminRoute>
-              <AdminUsers />
-            </AdminRoute>
-          } />
-          <Route path="/admin/products" element={
-            <AdminRoute>
-              <AdminProducts />
-            </AdminRoute>
-          } />
-        </Routes>
-      </Layout>
+              </PrivateRoute>
+            } />
+            
+            {/* Admin Routes */}
+            <Route path="/admin" element={
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
+            } />
+            <Route path="/admin/users" element={
+              <AdminRoute>
+                <AdminUsers />
+              </AdminRoute>
+            } />
+            <Route path="/admin/products" element={
+              <AdminRoute>
+                <AdminProducts />
+              </AdminRoute>
+            } />
+          </Routes>
+        </Layout>
     </AuthProvider>
   );
 }

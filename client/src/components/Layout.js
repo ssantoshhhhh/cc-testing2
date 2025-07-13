@@ -53,14 +53,14 @@ const Layout = ({ children }) => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navbar */}
-      <nav className="bg-black-900 shadow-md sticky top-0 z-50">
+      <nav className="bg-white shadow-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex-shrink-0">
               <Link to="/" className="flex items-center">
                 <img src="/logo.jpg" alt="Logo" className="w-10 h-10 object-contain mr-2 rounded-lg" />
-                <span className="text-xl font-bold text-primary-500">Campus Connect</span>
+                <span className="text-xl font-bold text-gray-900">Campus Connect</span>
               </Link>
             </div>
 
@@ -73,8 +73,8 @@ const Layout = ({ children }) => {
                     to={item.path}
                     className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
                       isActive(item.path)
-                        ? 'text-primary-500 bg-black-700'
-                        : 'text-gray-200 hover:text-primary-500 hover:bg-black-800'
+                        ? 'text-green-600 bg-green-50'
+                        : 'text-gray-700 hover:text-green-600 hover:bg-green-50'
                     }`}
                   >
                     {item.name}
@@ -91,11 +91,11 @@ const Layout = ({ children }) => {
                   placeholder="Search products..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-black-700 bg-black-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
                 <button
                   type="submit"
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-primary-500"
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-green-600"
                 >
                   <FaSearch size={16} />
                 </button>
@@ -107,7 +107,7 @@ const Layout = ({ children }) => {
               {/* Search button for mobile */}
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="md:hidden p-2 rounded-md text-gray-200 hover:text-primary-500 hover:bg-black-800"
+                className="md:hidden p-2 rounded-md text-gray-700 hover:text-green-600 hover:bg-green-50"
               >
                 {isMenuOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
               </button>
@@ -117,7 +117,7 @@ const Layout = ({ children }) => {
                 <div className="relative">
                   <button
                     onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                    className="flex items-center space-x-2 p-2 rounded-md text-gray-200 hover:text-primary-500 hover:bg-black-800 transition-colors duration-200"
+                    className="flex items-center space-x-2 p-2 rounded-md text-gray-700 hover:text-green-600 hover:bg-green-50 transition-colors duration-200"
                   >
                     {profilePictureUrl ? (
                       <img
@@ -126,8 +126,8 @@ const Layout = ({ children }) => {
                         className="w-8 h-8 rounded-full object-cover border-2 border-gray-200"
                       />
                     ) : (
-                      <div className="w-8 h-8 bg-black-700 rounded-full flex items-center justify-center">
-                        <FaUser size={14} className="text-gray-400" />
+                      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                        <FaUser size={14} className="text-gray-600" />
                       </div>
                     )}
                     <span className="hidden sm:block text-sm font-medium">
@@ -137,10 +137,10 @@ const Layout = ({ children }) => {
 
                   {/* Profile Dropdown */}
                   {isProfileMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-black-800 rounded-md shadow-lg py-1 z-50">
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
                       <Link
                         to="/profile"
-                        className="block px-4 py-2 text-sm text-gray-200 hover:bg-black-700 hover:text-primary-500"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600"
                         onClick={() => setIsProfileMenuOpen(false)}
                       >
                         <FaUser className="inline mr-2" />
@@ -148,7 +148,7 @@ const Layout = ({ children }) => {
                       </Link>
                       <Link
                         to="/seller-dashboard"
-                        className="block px-4 py-2 text-sm text-gray-200 hover:bg-black-700 hover:text-primary-500"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600"
                         onClick={() => setIsProfileMenuOpen(false)}
                       >
                         <FaCog className="inline mr-2" />
@@ -156,7 +156,7 @@ const Layout = ({ children }) => {
                       </Link>
                       <Link
                         to="/buyer-dashboard"
-                        className="block px-4 py-2 text-sm text-gray-200 hover:bg-black-700 hover:text-primary-500"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600"
                         onClick={() => setIsProfileMenuOpen(false)}
                       >
                         <FaCog className="inline mr-2" />
@@ -164,7 +164,7 @@ const Layout = ({ children }) => {
                       </Link>
                       <Link
                         to="/chats"
-                        className="block px-4 py-2 text-sm text-gray-200 hover:bg-black-700 hover:text-primary-500"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600"
                         onClick={() => setIsProfileMenuOpen(false)}
                       >
                         <FiMessageCircle className="inline mr-2" />
@@ -172,7 +172,7 @@ const Layout = ({ children }) => {
                       </Link>
                       <Link
                         to="/buy-requests"
-                        className="block px-4 py-2 text-sm text-gray-200 hover:bg-black-700 hover:text-primary-500"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600"
                         onClick={() => setIsProfileMenuOpen(false)}
                       >
                         <FaCog className="inline mr-2" />
@@ -181,7 +181,7 @@ const Layout = ({ children }) => {
                       {user?.role === 'admin' && (
                         <Link
                           to="/admin"
-                          className="block px-4 py-2 text-sm text-gray-200 hover:bg-black-700 hover:text-primary-500"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600"
                           onClick={() => setIsProfileMenuOpen(false)}
                         >
                           <FaCog className="inline mr-2" />
@@ -190,7 +190,7 @@ const Layout = ({ children }) => {
                       )}
                       <button
                         onClick={handleLogout}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-black-700 hover:text-primary-500"
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600"
                       >
                         <FaSignOutAlt className="inline mr-2" />
                         Logout
@@ -201,7 +201,7 @@ const Layout = ({ children }) => {
               ) : (
                 <Link
                   to="/login"
-                  className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition-colors duration-200"
+                  className="btn-primary"
                 >
                   Login
                 </Link>
@@ -221,11 +221,11 @@ const Layout = ({ children }) => {
                       placeholder="Search products..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-black-700 bg-black-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     />
                     <button
                       type="submit"
-                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-primary-500"
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-green-600"
                     >
                       <FaSearch size={16} />
                     </button>
@@ -239,8 +239,8 @@ const Layout = ({ children }) => {
                     to={item.path}
                     className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200 ${
                       isActive(item.path)
-                        ? 'text-primary-500 bg-black-700'
-                        : 'text-gray-200 hover:text-primary-500 hover:bg-black-800'
+                        ? 'text-green-600 bg-green-50'
+                        : 'text-gray-700 hover:text-green-600 hover:bg-green-50'
                     }`}
                     onClick={() => setIsMenuOpen(false)}
                   >
@@ -259,43 +259,43 @@ const Layout = ({ children }) => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-black-900 text-primary-100">
+      <footer className="bg-gray-800 text-white">
         <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
-              <h3 className="text-lg font-semibold mb-4 text-primary-500">Campus Connect</h3>
-              <p className="text-primary-100">
+              <h3 className="text-lg font-semibold mb-4">Campus Connect</h3>
+              <p className="text-gray-300">
                 Your trusted platform for buying and selling on campus.
               </p>
             </div>
             <div>
-              <h4 className="text-md font-semibold mb-4 text-primary-500">Quick Links</h4>
+              <h4 className="text-md font-semibold mb-4">Quick Links</h4>
               <ul className="space-y-2">
-                <li><Link to="/" className="text-primary-100 hover:text-primary-500">Home</Link></li>
-                <li><Link to="/collection" className="text-primary-100 hover:text-primary-500">Collection</Link></li>
-                <li><Link to="/about" className="text-primary-100 hover:text-primary-500">About</Link></li>
-                <li><Link to="/contact" className="text-primary-100 hover:text-primary-500">Contact</Link></li>
+                <li><Link to="/" className="text-gray-300 hover:text-white">Home</Link></li>
+                <li><Link to="/collection" className="text-gray-300 hover:text-white">Collection</Link></li>
+                <li><Link to="/about" className="text-gray-300 hover:text-white">About</Link></li>
+                <li><Link to="/contact" className="text-gray-300 hover:text-white">Contact</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="text-md font-semibold mb-4 text-primary-500">Categories</h4>
+              <h4 className="text-md font-semibold mb-4">Categories</h4>
               <ul className="space-y-2">
-                <li><Link to="/collection?category=electronics" className="text-primary-100 hover:text-primary-500">Electronics</Link></li>
-                <li><Link to="/collection?category=books" className="text-primary-100 hover:text-primary-500">Books</Link></li>
-                <li><Link to="/collection?category=furniture" className="text-primary-100 hover:text-primary-500">Furniture</Link></li>
-                <li><Link to="/collection?category=clothing" className="text-primary-100 hover:text-primary-500">Clothing</Link></li>
+                <li><Link to="/collection?category=electronics" className="text-gray-300 hover:text-white">Electronics</Link></li>
+                <li><Link to="/collection?category=books" className="text-gray-300 hover:text-white">Books</Link></li>
+                <li><Link to="/collection?category=furniture" className="text-gray-300 hover:text-white">Furniture</Link></li>
+                <li><Link to="/collection?category=clothing" className="text-gray-300 hover:text-white">Clothing</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="text-md font-semibold mb-4 text-primary-500">Contact Info</h4>
-              <p className="text-primary-100">
+              <h4 className="text-md font-semibold mb-4">Contact Info</h4>
+              <p className="text-gray-300">
                 Email: info@campusconnect.com<br />
                 Phone: +1 (555) 123-4567<br />
                 Address: Campus Address
               </p>
             </div>
           </div>
-          <div className="mt-8 pt-8 border-t border-black-700 text-center text-primary-100">
+          <div className="mt-8 pt-8 border-t border-gray-700 text-center text-gray-300">
             <p>&copy; 2024 Campus Connect. All rights reserved.</p>
           </div>
         </div>

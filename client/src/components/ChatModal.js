@@ -215,9 +215,9 @@ const ChatModal = ({ isOpen, onClose, product, sellerId, chatId: propChatId }) =
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-black-800 rounded-lg shadow-xl w-full max-w-md h-[600px] flex flex-col border border-primary-700">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md h-[600px] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-primary-700 bg-black-900">
+        <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center space-x-3">
             {otherPerson?.profilePicture ? (
               <img
@@ -230,19 +230,19 @@ const ChatModal = ({ isOpen, onClose, product, sellerId, chatId: propChatId }) =
                 }}
               />
             ) : null}
-            <div className={`w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center ${otherPerson?.profilePicture ? 'hidden' : ''}`}>
-              <FiUser className="text-primary-600" />
+            <div className={`w-10 h-10 bg-green-100 rounded-full flex items-center justify-center ${otherPerson?.profilePicture ? 'hidden' : ''}`}>
+              <FiUser className="text-green-600" />
             </div>
             <div>
-              <h3 className="font-semibold text-primary-500">
+              <h3 className="font-semibold text-gray-900">
                 Chat with {otherPerson?.name || 'Seller'}
               </h3>
-              <p className="text-sm text-primary-200">{product?.title || chat?.product?.title}</p>
+              <p className="text-sm text-gray-500">{product?.title || chat?.product?.title}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-primary-200 hover:text-primary-500 transition-colors"
+            className="text-gray-400 hover:text-gray-600 transition-colors"
           >
             <FiX className="w-6 h-6" />
           </button>
@@ -252,13 +252,13 @@ const ChatModal = ({ isOpen, onClose, product, sellerId, chatId: propChatId }) =
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {isCreatingChat ? (
             <div className="flex items-center justify-center h-full">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-              <p className="ml-2 text-primary-200">Starting chat...</p>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+              <p className="ml-2 text-gray-600">Starting chat...</p>
             </div>
           ) : isLoadingChat ? (
             <div className="flex items-center justify-center h-full">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-              <p className="ml-2 text-primary-200">Loading messages...</p>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+              <p className="ml-2 text-gray-600">Loading messages...</p>
             </div>
           ) : chatError ? (
             <div className="flex items-center justify-center h-full">
@@ -301,13 +301,13 @@ const ChatModal = ({ isOpen, onClose, product, sellerId, chatId: propChatId }) =
                   <div
                     className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
                       isOwnMessage
-                        ? 'bg-primary-600 text-white'
+                        ? 'bg-green-600 text-white'
                         : 'bg-gray-100 text-gray-900'
                     }`}
                   >
                     <p className="text-sm">{msg.content}</p>
                     <p className={`text-xs mt-1 ${
-                      isOwnMessage ? 'text-primary-100' : 'text-gray-500'
+                      isOwnMessage ? 'text-green-100' : 'text-gray-500'
                     }`}>
                       {formatTime(msg.timestamp)}
                     </p>
@@ -325,8 +325,8 @@ const ChatModal = ({ isOpen, onClose, product, sellerId, chatId: propChatId }) =
                           }}
                         />
                       ) : null}
-                      <div className={`w-8 h-8 bg-primary-200 rounded-full flex items-center justify-center ${user?.hasProfilePicture ? 'hidden' : ''}`}>
-                        <FiUser className="text-primary-600 w-4 h-4" />
+                      <div className={`w-8 h-8 bg-green-200 rounded-full flex items-center justify-center ${user?.hasProfilePicture ? 'hidden' : ''}`}>
+                        <FiUser className="text-green-600 w-4 h-4" />
                       </div>
                     </div>
                   )}
@@ -350,13 +350,13 @@ const ChatModal = ({ isOpen, onClose, product, sellerId, chatId: propChatId }) =
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Type your message..."
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
               disabled={!chatId || sendMessageMutation.isLoading}
             />
             <button
               type="submit"
               disabled={!message.trim() || !chatId || sendMessageMutation.isLoading}
-              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <FiSend className="w-4 h-4" />
             </button>
