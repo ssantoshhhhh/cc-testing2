@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const Product = require('../models/Product');
+const Transaction = require('../models/Transaction');
 const { protect } = require('../middleware/auth');
 
 const router = express.Router();
@@ -460,6 +461,17 @@ router.put('/:id/mark-sold', protect, async (req, res) => {
     product.isActive = false; // Hide from active listings
     
     await product.save();
+
+    // Create a Transaction document
+    await Transaction.create({
+      product: product._id,
+      seller: product.seller,
+      buyer: buyerId,
+      price: product.price,
+      status: 'completed',
+      paymentMethod: 'cash',
+      transactionDate: new Date()
+    });
     
     res.json({
       success: true,

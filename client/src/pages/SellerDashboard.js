@@ -312,23 +312,25 @@ const SellerDashboard = () => {
             ) : (
               <div className="space-y-4">
                 {transactions.slice(0, 5).map((transaction) => (
-                  <div key={transaction._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                    <div className="flex items-center">
+                  <div key={transaction._id} className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div className="flex items-center min-w-0 flex-1">
                       <div className="flex-shrink-0">
                         {transaction.product.images && transaction.product.images.length > 0 && (
                           <img
-                            className="h-10 w-10 rounded-full object-cover"
+                            className="h-12 w-12 rounded object-cover"
                             src={transaction.product.images[0]}
                             alt={transaction.product.title}
                           />
                         )}
                       </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-900">{transaction.product.title}</p>
+                      <div className="ml-4 min-w-0">
+                        <p className="text-base font-medium text-gray-900 truncate">{transaction.product.title}</p>
+                        <p className="text-sm text-gray-500 truncate">To: {transaction.buyer?.name || 'Unknown'} ({transaction.buyer?.email || 'N/A'})</p>
                         <p className="text-sm text-gray-500">₹{transaction.price}</p>
+                        <p className="text-xs text-gray-400">{transaction.transactionDate ? new Date(transaction.transactionDate).toLocaleString() : ''}</p>
                       </div>
                     </div>
-                    <div className="flex items-center">
+                    <div className="flex items-center mt-2 md:mt-0 md:ml-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         transaction.status === 'completed' ? 'bg-green-100 text-green-800' :
                         transaction.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
