@@ -74,7 +74,7 @@ const Home = () => {
       <section className="bg-gradient-to-br from-black-900 to-black-700 min-h-[80vh] flex items-center justify-center">
         <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-4">
-            Campus
+            A Campus
             <span className="text-primary-500 block">Marketplace</span>
           </h1>
           <p className="text-xl text-gray-200 leading-relaxed mb-8">
@@ -127,13 +127,13 @@ const Home = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-black-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-primary-100 mb-4">
               Why Choose Campus Marketplace?
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-primary-100 max-w-3xl mx-auto">
               Connect with fellow students to buy, sell, and trade items in a safe and trusted environment.
             </p>
           </div>
@@ -142,15 +142,15 @@ const Home = () => {
             {features.map((feature, index) => (
               <div
                 key={index}
-                className="text-center p-8 rounded-xl bg-gray-50 hover:bg-blue-50 transition-colors duration-300"
+                className="text-center p-8 rounded-xl bg-black-800 hover:bg-primary-700 transition-colors duration-300"
               >
-                <div className="w-16 h-16 mx-auto mb-6 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
+                <div className="w-16 h-16 mx-auto mb-6 bg-primary-700 rounded-full flex items-center justify-center text-primary-100">
                   {feature.icon}
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                <h3 className="text-xl font-semibold text-primary-100 mb-4">
                   {feature.title}
                 </h3>
-                <p className="text-gray-600">
+                <p className="text-primary-100">
                   {feature.description}
                 </p>
               </div>
@@ -160,13 +160,13 @@ const Home = () => {
       </section>
 
       {/* Products Preview Section */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-black-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-primary-100 mb-4">
               Featured Items
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-primary-100 max-w-3xl mx-auto">
               Discover great deals from your fellow students - textbooks, electronics, furniture, and more.
             </p>
           </div>
@@ -176,9 +176,9 @@ const Home = () => {
               {products.slice(0, 6).map((product) => (
                 <div
                   key={product._id}
-                  className="bg-white rounded-xl shadow-soft overflow-hidden hover:shadow-medium transition-shadow duration-300"
+                  className="bg-black-800 rounded-xl shadow-soft overflow-hidden hover:shadow-medium transition-shadow duration-300"
                 >
-                  <div className="aspect-w-16 aspect-h-9 bg-gray-200">
+                  <div className="aspect-w-16 aspect-h-9 bg-black-900">
                     <img
                       src={product.images[0] || '/placeholder-product.jpg'}
                       alt={product.name}
@@ -197,14 +197,14 @@ const Home = () => {
                       }`}>
                         {product.category}
                       </span>
-                      <span className="text-sm text-gray-500">
+                      <span className="text-sm text-primary-100">
                         {product.condition}
                       </span>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    <h3 className="text-lg font-semibold text-primary-100 mb-2">
                       {product.name}
                     </h3>
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                    <p className="text-primary-100 text-sm mb-4 line-clamp-2">
                       {product.description}
                     </p>
                     <div className="flex items-center justify-between mb-3">
@@ -212,7 +212,7 @@ const Home = () => {
                         ₹{product.price}
                       </span>
                       {product.seller && (
-                        <div className="flex items-center text-sm text-gray-500">
+                        <div className="flex items-center text-sm text-primary-100">
                           <FaUsers className="mr-1" />
                           {product.seller.name}
                         </div>

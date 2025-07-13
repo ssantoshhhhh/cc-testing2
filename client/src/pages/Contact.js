@@ -70,26 +70,26 @@ const Contact = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-black-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Contact Us</h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <h1 className="text-4xl font-bold text-primary-100 mb-4">Contact Us</h1>
+          <p className="text-xl text-primary-100 max-w-2xl mx-auto">
             Have questions or need assistance? We're here to help! Reach out to us and we'll get back to you as soon as possible.
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Contact Form */}
-          <div className="bg-white rounded-lg shadow-soft p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Send us a Message</h2>
+          <div className="bg-black-800 rounded-lg shadow-soft p-8">
+            <h2 className="text-2xl font-bold text-primary-100 mb-6">Send us a Message</h2>
             
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* First Name */}
                 <div>
-                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="firstName" className="block text-sm font-medium text-primary-100 mb-2">
                     First Name
                   </label>
                   <input
@@ -103,18 +103,18 @@ const Contact = () => {
                       },
                     })}
                     className={`input-field ${
-                      errors.firstName ? 'border-red-500 focus:ring-red-500' : ''
+                      errors.firstName ? 'border-primary-500 focus:ring-primary-500' : ''
                     }`}
                     placeholder="Enter your first name"
                   />
                   {errors.firstName && (
-                    <p className="mt-1 text-sm text-red-600">{errors.firstName.message}</p>
+                    <p className="mt-1 text-sm text-primary-600">{errors.firstName.message}</p>
                   )}
                 </div>
 
                 {/* Last Name */}
                 <div>
-                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="lastName" className="block text-sm font-medium text-primary-100 mb-2">
                     Last Name
                   </label>
                   <input
@@ -128,19 +128,19 @@ const Contact = () => {
                       },
                     })}
                     className={`input-field ${
-                      errors.lastName ? 'border-red-500 focus:ring-red-500' : ''
+                      errors.lastName ? 'border-primary-500 focus:ring-primary-500' : ''
                     }`}
                     placeholder="Enter your last name"
                   />
                   {errors.lastName && (
-                    <p className="mt-1 text-sm text-red-600">{errors.lastName.message}</p>
+                    <p className="mt-1 text-sm text-primary-600">{errors.lastName.message}</p>
                   )}
                 </div>
               </div>
 
               {/* Email */}
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="email" className="block text-sm font-medium text-primary-100 mb-2">
                   Email Address
                 </label>
                 <input
@@ -154,18 +154,18 @@ const Contact = () => {
                     },
                   })}
                   className={`input-field ${
-                    errors.email ? 'border-red-500 focus:ring-red-500' : ''
+                    errors.email ? 'border-primary-500 focus:ring-primary-500' : ''
                   }`}
                   placeholder="Enter your email"
                 />
                 {errors.email && (
-                  <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                  <p className="mt-1 text-sm text-primary-600">{errors.email.message}</p>
                 )}
               </div>
 
               {/* Subject */}
               <div>
-                <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="subject" className="block text-sm font-medium text-primary-100 mb-2">
                   Subject
                 </label>
                 <select
@@ -173,8 +173,8 @@ const Contact = () => {
                   {...register('subject', {
                     required: 'Subject is required',
                   })}
-                  className={`input-field ${
-                    errors.subject ? 'border-red-500 focus:ring-red-500' : ''
+                  className={`input-field custom-select ${
+                    errors.subject ? 'border-primary-500 focus:ring-primary-500' : ''
                   }`}
                 >
                   <option value="">Select a subject</option>
@@ -186,13 +186,13 @@ const Contact = () => {
                   <option value="other">Other</option>
                 </select>
                 {errors.subject && (
-                  <p className="mt-1 text-sm text-red-600">{errors.subject.message}</p>
+                  <p className="mt-1 text-sm text-primary-600">{errors.subject.message}</p>
                 )}
               </div>
 
               {/* Message */}
               <div>
-                <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="message" className="block text-sm font-medium text-primary-100 mb-2">
                   Message
                 </label>
                 <textarea
@@ -206,12 +206,12 @@ const Contact = () => {
                     },
                   })}
                   className={`input-field resize-none ${
-                    errors.message ? 'border-red-500 focus:ring-red-500' : ''
+                    errors.message ? 'border-primary-500 focus:ring-primary-500' : ''
                   }`}
                   placeholder="Tell us how we can help you..."
                 />
                 {errors.message && (
-                  <p className="mt-1 text-sm text-red-600">{errors.message.message}</p>
+                  <p className="mt-1 text-sm text-primary-600">{errors.message.message}</p>
                 )}
               </div>
 
@@ -240,25 +240,25 @@ const Contact = () => {
           <div className="space-y-8">
             {/* Contact Info Cards */}
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Get in Touch</h2>
+              <h2 className="text-2xl font-bold text-primary-100 mb-6">Get in Touch</h2>
               
               {contactInfo.map((info, index) => (
-                <div key={index} className="bg-white rounded-lg shadow-soft p-6">
+                <div key={index} className="bg-black-800 rounded-lg shadow-soft p-6">
                   <div className="flex items-start space-x-4">
-                    <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center text-red-600 flex-shrink-0">
+                    <div className="w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">
                       {info.icon}
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1">{info.title}</h3>
+                      <h3 className="text-lg font-semibold text-primary-100 mb-1">{info.title}</h3>
                       {info.link ? (
                         <a
                           href={info.link}
-                          className="text-gray-600 hover:text-red-600 transition-colors duration-200"
+                          className="text-primary-100 hover:text-primary-600 transition-colors duration-200"
                         >
                           {info.content}
                         </a>
                       ) : (
-                        <p className="text-gray-600">{info.content}</p>
+                        <p className="text-primary-100">{info.content}</p>
                       )}
                     </div>
                   </div>
@@ -267,34 +267,34 @@ const Contact = () => {
             </div>
 
             {/* FAQ Section */}
-            <div className="bg-white rounded-lg shadow-soft p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Frequently Asked Questions</h3>
+            <div className="bg-black-800 rounded-lg shadow-soft p-6">
+              <h3 className="text-xl font-bold text-primary-100 mb-4">Frequently Asked Questions</h3>
               
               <div className="space-y-4">
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">How do I buy or sell items?</h4>
-                  <p className="text-gray-600 text-sm">
+                  <h4 className="font-semibold text-primary-100 mb-2">How do I buy or sell items?</h4>
+                  <p className="text-primary-100 text-sm">
                     Simply browse our collection, contact sellers directly, and arrange meetups on campus. You'll need to create an account first.
                   </p>
                 </div>
                 
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">How do I list my items for sale?</h4>
-                  <p className="text-gray-600 text-sm">
+                  <h4 className="font-semibold text-primary-100 mb-2">How do I list my items for sale?</h4>
+                  <p className="text-primary-100 text-sm">
                     Create an account, go to your seller dashboard, and add your products with photos and descriptions.
                   </p>
                 </div>
                 
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">How do I contact sellers?</h4>
-                  <p className="text-gray-600 text-sm">
+                  <h4 className="font-semibold text-primary-100 mb-2">How do I contact sellers?</h4>
+                  <p className="text-primary-100 text-sm">
                     Use the "Contact Seller" button on any product page to message the seller directly through our platform.
                   </p>
                 </div>
                 
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Is it safe to buy from other students?</h4>
-                  <p className="text-gray-600 text-sm">
+                  <h4 className="font-semibold text-primary-100 mb-2">Is it safe to buy from other students?</h4>
+                  <p className="text-primary-100 text-sm">
                     Yes! All users are verified students with campus IDs. Meet in public campus locations for transactions.
                   </p>
                 </div>
@@ -305,9 +305,9 @@ const Contact = () => {
 
         {/* Map Section */}
         <div className="mt-16">
-          <div className="bg-white rounded-lg shadow-soft p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Find Us</h2>
-            <div className="bg-gray-200 rounded-lg overflow-hidden flex items-center justify-center" style={{ height: '400px' }}>
+          <div className="bg-black-800 rounded-lg shadow-soft p-8">
+            <h2 className="text-2xl font-bold text-primary-100 mb-6 text-center">Find Us</h2>
+            <div className="bg-black-700 rounded-lg overflow-hidden flex items-center justify-center" style={{ height: '400px' }}>
               <iframe
                 title="SRKR Engineering College Map"
                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3825.234964479836!2d81.5079643148606!3d16.54074298861351!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a37a3b2e2e2e2e3%3A0x7e4e2e2e2e2e2e2e!2sSagi%20Rama%20Krishnam%20Raju%20Engineering%20College!5e0!3m2!1sen!2sin!4v1680000000000!5m2!1sen!2sin"
@@ -319,10 +319,26 @@ const Contact = () => {
                 referrerPolicy="no-referrer-when-downgrade"
               ></iframe>
             </div>
-            <p className="text-center text-gray-600 mt-4">Sagi Rama Krishnam Raju Engineering College, Chinna-Amiram, Bhimavaram, Andhra Pradesh 534204</p>
+            <p className="text-center text-primary-100 mt-4">Sagi Rama Krishnam Raju Engineering College, Chinna-Amiram, Bhimavaram, Andhra Pradesh 534204</p>
           </div>
         </div>
       </div>
+      
+      <style>{`
+        .custom-select {
+          background-color: #18181b !important;
+          color: #fff !important;
+          border: 1px solid #b91c1c !important;
+        }
+        .custom-select:focus {
+          border-color: #ef4444 !important;
+          box-shadow: 0 0 0 2px #ef444444;
+        }
+        .custom-select option {
+          background: #18181b !important;
+          color: #fff !important;
+        }
+      `}</style>
     </div>
   );
 };
