@@ -6,7 +6,7 @@ import { useQuery } from 'react-query';
 import axios from '../axios'; // use the custom axios instance
 import toast from 'react-hot-toast';
 import { Link, useNavigate } from 'react-router-dom';
-import useOrderNotifications from '../hooks/useOrderNotifications';
+
 import ProfilePictureUpload from '../components/ProfilePictureUpload';
 
 const Profile = () => {
@@ -20,14 +20,9 @@ const Profile = () => {
   const [deleteOtpError, setDeleteOtpError] = useState('');
   const [resendDisabled, setResendDisabled] = useState(false);
   const [countdown, setCountdown] = useState(0);
-  const previousOrdersRef = useRef([]);
   const navigate = useNavigate();
   
-  const {
-    confirmedAudioRef,
-    rejectedAudioRef,
-    playOrderStatusSound
-  } = useOrderNotifications();
+
 
   // Countdown timer for resend button
   useEffect(() => {
@@ -40,11 +35,11 @@ const Profile = () => {
     return () => clearTimeout(timer);
   }, [countdown]);
 
-  // Fetch all user orders for real-time stats
-  const { data: ordersData, isLoading: ordersLoading } = useQuery(
-    ['userOrdersProfile'],
+  // Fetch user marketplace data
+  const { data: marketplaceData, isLoading: marketplaceLoading } = useQuery(
+    ['userMarketplaceProfile'],
     async () => {
-      const response = await axios.get('/api/users/orders?limit=1000');
+      const response = await axios.get('/api/users/marketplace-stats');
       return response.data;
     },
     {
@@ -55,45 +50,15 @@ const Profile = () => {
     }
   );
 
-  // Check for order status changes and play sounds
-  useEffect(() => {
-    if (ordersData?.data && previousOrdersRef.current.length > 0) {
-      const currentOrders = ordersData.data;
-      const previousOrders = previousOrdersRef.current;
+  const marketplaceStats = marketplaceData?.data || {};
 
-      currentOrders.forEach(currentOrder => {
-        const previousOrder = previousOrders.find(prev => prev._id === currentOrder._id);
-        if (previousOrder && previousOrder.status !== currentOrder.status) {
-          playOrderStatusSound(currentOrder.status, previousOrder.status);
-        }
-      });
-    }
-    
-    if (ordersData?.data) {
-      previousOrdersRef.current = ordersData.data;
-    }
-  }, [ordersData, playOrderStatusSound]);
-
-  const orders = ordersData?.data || [];
-
-  // Calculate stats from orders
-  const nonCancelledOrders = orders.filter(order => order.status !== 'cancelled');
-  const totalOrders = nonCancelledOrders.length;
-  const totalSpent = nonCancelledOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
-  const activeRentals = orders.filter(
-    (order) => ['confirmed', 'rented'].includes(order.status)
-  ).length;
-  const overdueRentals = orders.filter(
-    (order) => ['confirmed', 'rented'].includes(order.status) && new Date() > new Date(order.expectedReturnDate)
-  ).length;
-  const totalPenalty = orders.reduce((sum, order) => sum + (order.penaltyAmount || 0), 0);
-  const userCancelledOrders = orders.filter(order => order.status === 'cancelled' && order.cancelledBy === 'user').length;
-  const adminCancelledOrders = orders.filter(order => order.status === 'cancelled' && order.cancelledBy === 'admin').length;
-
-  // For recent orders, show the 5 most recent
-  const recentOrders = [...orders]
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .slice(0, 5);
+  // Calculate marketplace stats
+  const totalListings = marketplaceStats.totalListings || 0;
+  const activeListings = marketplaceStats.activeListings || 0;
+  const totalSales = marketplaceStats.totalSales || 0;
+  const totalPurchases = marketplaceStats.totalPurchases || 0;
+  const sellerRating = marketplaceStats.sellerRating || 0;
+  const totalTransactions = marketplaceStats.totalTransactions || 0;
 
   const {
     register,
@@ -228,9 +193,6 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
 
-      {/* Audio elements for notifications */}
-      <audio ref={confirmedAudioRef} src="/confimed.mp3" preload="auto" />
-      <audio ref={rejectedAudioRef} src="/rejected.mp3" preload="auto" />
       
       {/* Profile Picture Modal */}
       {showProfileModal && (
@@ -413,10 +375,10 @@ const Profile = () => {
               )}
             </form>
 
-            {/* Account Stats */}
+            {/* Marketplace Stats */}
             <div className="mt-8 border-t border-gray-200 pt-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Statistics</h3>
-              {ordersLoading ? (
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Marketplace Statistics</h3>
+              {marketplaceLoading ? (
                 <div className="flex items-center justify-center h-32">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
                 </div>
@@ -430,9 +392,9 @@ const Profile = () => {
                         </div>
                       </div>
                       <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-900">Total Orders</p>
+                        <p className="text-sm font-medium text-gray-900">Total Listings</p>
                         <p className="text-2xl font-semibold text-green-600">
-                          {totalOrders}
+                          {totalListings}
                         </p>
                       </div>
                     </div>
@@ -446,9 +408,9 @@ const Profile = () => {
                         </div>
                       </div>
                       <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-900">Active Rentals</p>
+                        <p className="text-sm font-medium text-gray-900">Active Listings</p>
                         <p className="text-2xl font-semibold text-blue-600">
-                          {activeRentals}
+                          {activeListings}
                         </p>
                       </div>
                     </div>
@@ -458,13 +420,13 @@ const Profile = () => {
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
                         <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center">
-                          <span className="text-white font-semibold text-sm">₹</span>
+                          <span className="text-white font-semibold text-sm">💰</span>
                         </div>
                       </div>
                       <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-900">Total Spent</p>
+                        <p className="text-sm font-medium text-gray-900">Total Sales</p>
                         <p className="text-2xl font-semibold text-orange-600">
-                          ₹{totalSpent}
+                          ₹{totalSales}
                         </p>
                       </div>
                     </div>
@@ -474,80 +436,62 @@ const Profile = () => {
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
                         <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
-                          <span className="text-white font-semibold text-sm">📅</span>
+                          <span className="text-white font-semibold text-sm">⭐</span>
                         </div>
                       </div>
                       <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-900">Member Since</p>
+                        <p className="text-sm font-medium text-gray-900">Seller Rating</p>
                         <p className="text-lg font-semibold text-purple-600">
-                          {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                          {sellerRating.toFixed(1)}/5.0
                         </p>
                       </div>
                     </div>
                   </div>
 
                   {/* Additional Statistics */}
-                  <div className="bg-red-50 p-4 rounded-lg">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center">
-                          <span className="text-white font-semibold text-sm">⚠️</span>
-                        </div>
-                      </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-900">Overdue Rentals</p>
-                        <p className="text-2xl font-semibold text-red-600">
-                          {overdueRentals}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
                   <div className="bg-yellow-50 p-4 rounded-lg">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
                         <div className="w-8 h-8 bg-yellow-600 rounded-full flex items-center justify-center">
-                          <span className="text-white font-semibold text-sm">💰</span>
+                          <span className="text-white font-semibold text-sm">🛒</span>
                         </div>
                       </div>
                       <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-900">Total Penalties</p>
+                        <p className="text-sm font-medium text-gray-900">Total Purchases</p>
                         <p className="text-2xl font-semibold text-yellow-600">
-                          ₹{totalPenalty}
+                          {totalPurchases}
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  {/* User Cancelled Orders */}
+                  <div className="bg-indigo-50 p-4 rounded-lg">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0">
+                        <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center">
+                          <span className="text-white font-semibold text-sm">📊</span>
+                        </div>
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-900">Total Transactions</p>
+                        <p className="text-2xl font-semibold text-indigo-600">
+                          {totalTransactions}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
                         <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center">
-                          <span className="text-white font-semibold text-sm">🙋‍♂️</span>
+                          <span className="text-white font-semibold text-sm">📅</span>
                         </div>
                       </div>
                       <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-900">User Cancelled Orders</p>
-                        <p className="text-2xl font-semibold text-gray-600">
-                          {userCancelledOrders}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Admin Cancelled Orders */}
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center">
-                          <span className="text-white font-semibold text-sm">🛑</span>
-                        </div>
-                      </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-900">Admin Cancelled Orders</p>
-                        <p className="text-2xl font-semibold text-gray-800">
-                          {adminCancelledOrders}
+                        <p className="text-sm font-medium text-gray-900">Member Since</p>
+                        <p className="text-lg font-semibold text-gray-600">
+                          {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
                         </p>
                       </div>
                     </div>
@@ -557,46 +501,72 @@ const Profile = () => {
               )}
             </div>
 
-            {/* Recent Orders Section */}
+            {/* Quick Actions */}
             <div className="mt-8 border-t border-gray-200 pt-8">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Recent Orders</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Link
-                  to="/orders"
-                  className="text-green-600 hover:text-green-700 font-medium text-sm"
+                  to="/add-product"
+                  className="bg-green-50 border border-green-200 rounded-lg p-4 hover:bg-green-100 transition-colors"
                 >
-                  View All Orders
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
+                      <span className="text-white font-semibold">+</span>
+                    </div>
+                    <div className="ml-4">
+                      <p className="font-medium text-gray-900">Add New Listing</p>
+                      <p className="text-sm text-gray-600">List an item for sale</p>
+                    </div>
+                  </div>
+                </Link>
+
+                <Link
+                  to="/seller-dashboard"
+                  className="bg-blue-50 border border-blue-200 rounded-lg p-4 hover:bg-blue-100 transition-colors"
+                >
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                      <span className="text-white font-semibold">📊</span>
+                    </div>
+                    <div className="ml-4">
+                      <p className="font-medium text-gray-900">Seller Dashboard</p>
+                      <p className="text-sm text-gray-600">Manage your listings</p>
+                    </div>
+                  </div>
+                </Link>
+
+                <Link
+                  to="/buyer-dashboard"
+                  className="bg-purple-50 border border-purple-200 rounded-lg p-4 hover:bg-purple-100 transition-colors"
+                >
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+                      <span className="text-white font-semibold">🛒</span>
+                    </div>
+                    <div className="ml-4">
+                      <p className="font-medium text-gray-900">Buyer Dashboard</p>
+                      <p className="text-sm text-gray-600">View your purchases</p>
+                    </div>
+                  </div>
+                </Link>
+
+                <Link
+                  to="/collection"
+                  className="bg-orange-50 border border-orange-200 rounded-lg p-4 hover:bg-orange-100 transition-colors"
+                >
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center">
+                      <span className="text-white font-semibold">🔍</span>
+                    </div>
+                    <div className="ml-4">
+                      <p className="font-medium text-gray-900">Browse Items</p>
+                      <p className="text-sm text-gray-600">Find items to buy</p>
+                    </div>
+                  </div>
                 </Link>
               </div>
-              {recentOrders && recentOrders.length > 0 ? (
-                <div className="space-y-4">
-                  {recentOrders.map((order) => (
-                    <div key={order._id} className="bg-gray-50 p-4 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            Order #{order._id.slice(-8).toUpperCase()}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {new Date(order.createdAt).toLocaleDateString()} • ₹{order.totalAmount}
-                          </p>
-                        </div>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                          order.status === 'returned' ? 'bg-gray-100 text-gray-800' :
-                          order.status === 'rented' ? 'bg-green-100 text-green-800' :
-                          order.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-600 text-center py-4">No recent orders</p>
-              )}
             </div>
 
             {/* Account Deletion Section */}

@@ -2,7 +2,6 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const Product = require('../models/Product');
-const Order = require('../models/Order');
 const { protect, authorize } = require('../middleware/auth');
 const nodemailer = require('nodemailer');
 
@@ -22,78 +21,21 @@ router.get('/dashboard', async (req, res) => {
     // Get total products
     const totalProducts = await Product.countDocuments({ isActive: true });
     
-    // Get total orders (excluding cancelled/rejected orders)
-    const totalOrders = await Order.countDocuments({ status: { $ne: 'cancelled' } });
-    
-    // Get admin cancelled orders count
-    const adminCancelledOrders = await Order.countDocuments({ 
-      status: 'cancelled',
-      cancelledBy: 'admin'
+    // Get active sellers
+    const activeSellers = await User.countDocuments({ 
+      role: 'user',
+      isActive: true,
+      isSeller: true
     });
     
-    // Get user cancelled orders count
-    const userCancelledOrders = await Order.countDocuments({ 
-      status: 'cancelled',
-      cancelledBy: 'user'
+    // Get total transactions (placeholder for future implementation)
+    const totalTransactions = 0;
+    const totalRevenue = 0;
+    const activeListings = await Product.countDocuments({ 
+      isActive: true,
+      availableQuantity: { $gt: 0 }
     });
-    
-    // Get revenue statistics (excluding cancelled/rejected orders)
-    const revenueStats = await Order.aggregate([
-      {
-        $match: {
-          status: { $ne: 'cancelled' } // Exclude cancelled orders from all statistics
-        }
-      },
-      {
-        $group: {
-          _id: null,
-          totalRevenue: { $sum: '$totalAmount' },
-          totalPenalty: { $sum: '$penaltyAmount' },
-          pendingOrders: {
-            $sum: {
-              $cond: [{ $eq: ['$status', 'pending'] }, 1, 0]
-            }
-          },
-          activeRentals: {
-            $sum: {
-              $cond: [
-                { $in: ['$status', ['confirmed', 'rented']] },
-                1,
-                0
-              ]
-            }
-          },
-          overdueRentals: {
-            $sum: {
-              $cond: [
-                { $and: [
-                  { $in: ['$status', ['confirmed', 'rented']] },
-                  { $gt: [new Date(), '$expectedReturnDate'] }
-                ]},
-                1,
-                0
-              ]
-            }
-          }
-        }
-      }
-    ]);
-
-    // Ensure we have default values if no revenue stats
-    const defaultRevenueStats = {
-      totalRevenue: 0,
-      totalPenalty: 0,
-      pendingOrders: 0,
-      activeRentals: 0,
-      overdueRentals: 0
-    };
-
-    // Get recent orders (including cancelled orders so admin can see all transactions)
-    const recentOrders = await Order.find()
-      .populate('user', 'name email studentId')
-      .populate('items.product')
-      .sort({ createdAt: -1 })
-      .limit(10);
+    const reportedItems = 0; // Placeholder for future implementation
 
     // Get low stock products
     const lowStockProducts = await Product.find({
@@ -101,7 +43,11 @@ router.get('/dashboard', async (req, res) => {
       availableQuantity: { $lte: 5 }
     }).sort({ availableQuantity: 1 });
 
-
+    // Get recent products instead of orders
+    const recentProducts = await Product.find({ isActive: true })
+      .populate('seller', 'name email studentId')
+      .sort({ createdAt: -1 })
+      .limit(10);
 
     res.json({
       success: true,
@@ -109,12 +55,13 @@ router.get('/dashboard', async (req, res) => {
         stats: {
           totalUsers,
           totalProducts,
-          totalOrders,
-          adminCancelledOrders, // Admin cancelled orders count
-          userCancelledOrders, // User cancelled orders count
-          ...(revenueStats[0] || defaultRevenueStats)
+          activeSellers,
+          totalTransactions,
+          totalRevenue,
+          activeListings,
+          reportedItems
         },
-        recentOrders,
+        recentProducts,
         lowStockProducts
       }
     });
@@ -160,62 +107,55 @@ router.get('/users', async (req, res) => {
 
     const total = await User.countDocuments(query);
 
-    // Aggregate order counts for each user
+    // Aggregate marketplace statistics for each user
     const userIds = users.map(u => u._id);
     
-    // Get total orders per user
-    const ordersAgg = await Order.aggregate([
-      { $match: { user: { $in: userIds } } },
-      { $group: { _id: '$user', totalRentals: { $sum: 1 } } }
+    // Get total listings per user
+    const listingsAgg = await Product.aggregate([
+      { $match: { seller: { $in: userIds } } },
+      { $group: { _id: '$seller', totalListings: { $sum: 1 } } }
     ]);
     
-    // Get successful orders (confirmed, rented, returned) per user
-    const successfulAgg = await Order.aggregate([
-      { $match: { user: { $in: userIds }, status: { $in: ['confirmed', 'rented', 'returned'] } } },
-      { $group: { _id: '$user', successfulOrders: { $sum: 1 } } }
+    // Get active listings per user
+    const activeListingsAgg = await Product.aggregate([
+      { $match: { seller: { $in: userIds }, availableQuantity: { $gt: 0 } } },
+      { $group: { _id: '$seller', activeListings: { $sum: 1 } } }
     ]);
     
-    // Get declined/cancelled orders per user
-    const declinedAgg = await Order.aggregate([
-      { $match: { user: { $in: userIds }, status: 'cancelled' } },
-      { $group: { _id: '$user', declinedOrders: { $sum: 1 } } }
-    ]);
-    
-    // Get active rentals per user
-    const activeAgg = await Order.aggregate([
-      { $match: { user: { $in: userIds }, status: { $in: ['confirmed', 'rented'] } } },
-      { $group: { _id: '$user', activeRentals: { $sum: 1 } } }
+    // Get total sales per user (placeholder for future implementation)
+    const salesAgg = await Product.aggregate([
+      { $match: { seller: { $in: userIds } } },
+      { $group: { _id: '$seller', totalSales: { $sum: '$price' } } }
     ]);
     
     // Convert to maps for quick lookup
-    const ordersMap = Object.fromEntries(ordersAgg.map(o => [o._id.toString(), o.totalRentals]));
-    const successfulMap = Object.fromEntries(successfulAgg.map(s => [s._id.toString(), s.successfulOrders]));
-    const declinedMap = Object.fromEntries(declinedAgg.map(d => [d._id.toString(), d.declinedOrders]));
-    const activeMap = Object.fromEntries(activeAgg.map(a => [a._id.toString(), a.activeRentals]));
+    const listingsMap = Object.fromEntries(listingsAgg.map(l => [l._id.toString(), l.totalListings]));
+    const activeListingsMap = Object.fromEntries(activeListingsAgg.map(a => [a._id.toString(), a.activeListings]));
+    const salesMap = Object.fromEntries(salesAgg.map(s => [s._id.toString(), s.totalSales]));
 
-    // Attach counts to each user
-    const usersWithCounts = users.map(user => {
+    // Attach marketplace stats to each user
+    const usersWithStats = users.map(user => {
       const id = user._id.toString();
       return {
         ...user.toObject(),
-        totalRentals: ordersMap[id] || 0,
-        successfulOrders: successfulMap[id] || 0,
-        declinedOrders: declinedMap[id] || 0,
-        activeRentals: activeMap[id] || 0
+        totalListings: listingsMap[id] || 0,
+        activeListings: activeListingsMap[id] || 0,
+        totalSales: salesMap[id] || 0,
+        isSeller: user.isSeller || false
       };
     });
 
     res.json({
       success: true,
-      count: usersWithCounts.length,
+      count: usersWithStats.length,
       total,
       pagination: {
         current: parseInt(page),
         pages: Math.ceil(total / parseInt(limit)),
-        hasNext: skip + usersWithCounts.length < total,
+        hasNext: skip + usersWithStats.length < total,
         hasPrev: parseInt(page) > 1
       },
-      data: usersWithCounts
+      data: usersWithStats
     });
   } catch (error) {
     console.error(error);
@@ -224,7 +164,7 @@ router.get('/users', async (req, res) => {
 });
 
 // @route   GET /api/admin/users/:id
-// @desc    Get single user with orders
+// @desc    Get single user with marketplace data
 // @access  Private/Admin
 router.get('/users/:id', async (req, res) => {
   try {
@@ -234,15 +174,14 @@ router.get('/users/:id', async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const orders = await Order.find({ user: req.params.id })
-      .populate('items.product')
+    const products = await Product.find({ seller: req.params.id })
       .sort({ createdAt: -1 });
 
     res.json({
       success: true,
       data: {
         user,
-        orders
+        products
       }
     });
   } catch (error) {
@@ -326,15 +265,15 @@ router.delete('/users/:id', async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Check if user has any active orders
-    const activeOrders = await Order.find({
-      user: req.params.id,
-      status: { $in: ['confirmed', 'rented'] }
+    // Check if user has any active listings
+    const activeListings = await Product.find({
+      seller: req.params.id,
+      availableQuantity: { $gt: 0 }
     });
 
-    if (activeOrders.length > 0) {
+    if (activeListings.length > 0) {
       return res.status(400).json({ 
-        message: 'Cannot delete user with active orders. Please handle active orders first.' 
+        message: 'Cannot delete user with active listings. Please remove all listings first.' 
       });
     }
 
@@ -367,7 +306,7 @@ router.delete('/users/:id', async (req, res) => {
             <p><strong>What this means:</strong></p>
             <ul>
               <li>All your account data has been permanently removed</li>
-              <li>Your order history has been deleted</li>
+              <li>Your marketplace activity has been deleted</li>
               <li>You will no longer be able to access the platform</li>
               <li>If you believe this was done in error, please contact the administration</li>
             </ul>
@@ -383,88 +322,12 @@ router.delete('/users/:id', async (req, res) => {
       // Continue with deletion even if email fails
     }
 
-    // Delete user's orders first
-    await Order.deleteMany({ user: req.params.id });
-    
     // Delete the user
     await User.findByIdAndDelete(req.params.id);
 
     res.json({
       success: true,
       message: 'User deleted successfully'
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// @route   GET /api/admin/orders
-// @desc    Get all orders
-// @access  Private/Admin
-router.get('/orders', async (req, res) => {
-  try {
-    const { status, search, limit = 100, page = 1 } = req.query;
-    
-    let query = {};
-    if (status) {
-      query.status = status;
-    }
-    
-    if (search) {
-      query.$or = [
-        { 'user.name': { $regex: search, $options: 'i' } },
-        { 'user.email': { $regex: search, $options: 'i' } },
-        { 'user.studentId': { $regex: search, $options: 'i' } }
-      ];
-    }
-
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-
-    const orders = await Order.find(query)
-      .populate('user', 'name email studentId department')
-      .populate('items.product')
-      .sort({ createdAt: -1 })
-      .limit(parseInt(limit))
-      .skip(skip);
-
-    const total = await Order.countDocuments(query);
-
-    res.json({
-      success: true,
-      count: orders.length,
-      total,
-      pagination: {
-        current: parseInt(page),
-        pages: Math.ceil(total / parseInt(limit)),
-        hasNext: skip + orders.length < total,
-        hasPrev: parseInt(page) > 1
-      },
-      data: orders
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// @route   GET /api/admin/orders/overdue
-// @desc    Get all overdue orders
-// @access  Private/Admin
-router.get('/orders/overdue', async (req, res) => {
-  try {
-    const overdueOrders = await Order.find({
-      status: { $in: ['confirmed', 'rented'] },
-      expectedReturnDate: { $lt: new Date() }
-    })
-    .populate('user', 'name email studentId department')
-    .populate('items.product')
-    .sort({ expectedReturnDate: 1 });
-
-    res.json({
-      success: true,
-      count: overdueOrders.length,
-      data: overdueOrders
     });
   } catch (error) {
     console.error(error);
@@ -773,238 +636,6 @@ router.post('/products/:id/reduce-stock', [
   }
 });
 
-// @route   PUT /api/admin/orders/:id/status
-// @desc    Update order status (Admin only)
-// @access  Private/Admin
-router.put('/orders/:id/status', [
-  body('status').isIn(['pending', 'confirmed', 'rented', 'delivered', 'returned', 'overdue', 'cancelled'])
-    .withMessage('Invalid status')
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
 
-    const order = await Order.findById(req.params.id)
-      .populate('items.product');
-    
-    if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
-    }
-
-    const previousStatus = order.status;
-    order.status = req.body.status;
-    
-    console.log('DEBUG: Admin status update - Previous status:', previousStatus, 'New status:', req.body.status);
-    
-    if (req.body.status === 'cancelled') {
-      order.cancelledBy = 'admin';
-    }
-
-    // Handle inventory restoration when order is cancelled or returned
-    if ((req.body.status === 'cancelled' && previousStatus !== 'cancelled') || 
-        (req.body.status === 'returned' && previousStatus !== 'returned')) {
-      // Return items to inventory
-      for (const item of order.items) {
-        const product = await Product.findById(item.product._id);
-        if (product) {
-          product.availableQuantity += item.quantity;
-          await product.save();
-        }
-      }
-    }
-
-    // Send confirmation email if status changed to confirmed
-    if (previousStatus !== 'confirmed' && req.body.status === 'confirmed') {
-      console.log('DEBUG: Attempting to send confirmation email for order:', order._id);
-      try {
-        // Populate user for email
-        await order.populate('user');
-        const user = order.user;
-        console.log('DEBUG: User email for confirmation:', user.email);
-        console.log('DEBUG: User name for confirmation:', user.name);
-        
-        if (!user.email) {
-          console.error('DEBUG: User email is missing for order:', order._id);
-          throw new Error('User email not found');
-        }
-        
-        const transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
-          }
-        });
-        const itemLines = order.items.map(item =>
-          `<li><b>${item.product.name}</b> (x${item.quantity}) for ${order.rentalDays} days: ₹${item.totalPrice}</li>`
-        ).join('');
-        const htmlBody = `
-          <h2>Your Order is Confirmed!</h2>
-          <p>Dear ${user.name},</p>
-          <p>Your order has been <b>confirmed</b> and will be processed soon.</p>
-          <p><b>Order ID:</b> ${order._id}</p>
-          <p><b>Delivery Address:</b> ${order.deliveryAddress}</p>
-          <p><b>Delivery Instructions:</b> ${order.deliveryInstructions || 'N/A'}</p>
-          <p><b>Payment Method:</b> ${order.paymentMethod}</p>
-          <p><b>Total Amount:</b> ₹${order.totalAmount}</p>
-          <p><b>Placed at:</b> ${order.createdAt}</p>
-          <h3>Items:</h3>
-          <ul>${itemLines}</ul>
-          <p>Thank you for choosing us!</p>
-        `;
-        const mailOptions = {
-          from: process.env.EMAIL_USER,
-          to: user.email,
-          subject: `Order Confirmed: #${order._id.toString().slice(-8).toUpperCase()}`,
-          text:
-`Dear ${user.name},\n\nYour order has been confirmed!\n\nOrder ID: ${order._id}\nDelivery Address: ${order.deliveryAddress}\nDelivery Instructions: ${order.deliveryInstructions || 'N/A'}\nPayment Method: ${order.paymentMethod}\nTotal Amount: ₹${order.totalAmount}\n\nWe will process your order soon. Thank you for choosing us!`,
-          html: htmlBody
-        };
-        console.log('DEBUG: Sending email to:', user.email);
-        await transporter.sendMail(mailOptions);
-        console.log('Order confirmation email sent to user:', user.email, 'for order:', order._id);
-      } catch (userMailErr) {
-        console.error('Failed to send order confirmation email to user for order', order._id, userMailErr);
-      }
-    }
-
-    // Send cancellation email if status changed to cancelled
-    if (previousStatus !== 'cancelled' && req.body.status === 'cancelled') {
-      console.log('DEBUG: Attempting to send cancellation email for order:', order._id);
-      try {
-        // Populate user for email
-        await order.populate('user');
-        const user = order.user;
-        console.log('DEBUG: User email for cancellation:', user.email);
-        
-        if (!user.email) {
-          console.error('DEBUG: User email is missing for order:', order._id);
-          throw new Error('User email not found');
-        }
-        
-        const transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
-          }
-        });
-        const itemLines = order.items.map(item =>
-          `<li><b>${item.product.name}</b> (x${item.quantity}) for ${order.rentalDays} days: ₹${item.totalPrice}</li>`
-        ).join('');
-        const htmlBody = `
-          <h2>Your Order has been Declined</h2>
-          <p>Dear ${user.name},</p>
-          <p>We regret to inform you that your order has been <b>declined</b> by the admin.</p>
-          <p><b>Order ID:</b> ${order._id}</p>
-          <p><b>Delivery Address:</b> ${order.deliveryAddress}</p>
-          <p><b>Delivery Instructions:</b> ${order.deliveryInstructions || 'N/A'}</p>
-          <p><b>Payment Method:</b> ${order.paymentMethod}</p>
-          <p><b>Total Amount:</b> ₹${order.totalAmount}</p>
-          <p><b>Placed at:</b> ${order.createdAt}</p>
-          <h3>Items:</h3>
-          <ul>${itemLines}</ul>
-          <p>If you have any questions, please contact support.</p>
-        `;
-        const mailOptions = {
-          from: process.env.EMAIL_USER,
-          to: user.email,
-          subject: `Order Declined: #${order._id.toString().slice(-8).toUpperCase()}`,
-          text:
-`Dear ${user.name},\n\nWe regret to inform you that your order has been declined by the admin.\n\nOrder ID: ${order._id}\nDelivery Address: ${order.deliveryAddress}\nDelivery Instructions: ${order.deliveryInstructions || 'N/A'}\nPayment Method: ${order.paymentMethod}\nTotal Amount: ₹${order.totalAmount}\n\nIf you have any questions, please contact support.`,
-          html: htmlBody
-        };
-        console.log('DEBUG: Sending cancellation email to:', user.email);
-        await transporter.sendMail(mailOptions);
-        console.log('Order cancellation email sent to user:', user.email, 'for order:', order._id);
-      } catch (userMailErr) {
-        console.error('Failed to send order cancellation email to user for order', order._id, userMailErr);
-      }
-    }
-
-    // Send return confirmation email if status changed to returned
-    if (previousStatus !== 'returned' && req.body.status === 'returned') {
-      console.log('DEBUG: Attempting to send return confirmation email for order:', order._id);
-      try {
-        // Populate user for email
-        await order.populate('user');
-        const user = order.user;
-        console.log('DEBUG: User email for return confirmation:', user.email);
-        
-        if (!user.email) {
-          console.error('DEBUG: User email is missing for order:', order._id);
-          throw new Error('User email not found');
-        }
-        
-        const transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
-          }
-        });
-        
-        const itemLines = order.items.map(item =>
-          `<li><b>${item.product.name}</b> (x${item.quantity}) for ${order.rentalDays} days: ₹${item.totalPrice}</li>`
-        ).join('');
-        
-        const htmlBody = `
-          <h2>Your Order is Returned!</h2>
-          <p>Dear ${user.name},</p>
-          <p>Your order has been returned.</p>
-          <p><b>Order ID:</b> ${order._id}</p>
-          <p><b>Delivery Address:</b> ${order.deliveryAddress}</p>
-          <p><b>Delivery Instructions:</b> ${order.deliveryInstructions || 'N/A'}</p>
-          <p><b>Payment Method:</b> ${order.paymentMethod}</p>
-          <p><b>Total Amount:</b> ₹${order.totalAmount}</p>
-          <p><b>Placed at:</b> ${order.createdAt}</p>
-          <h3>Items:</h3>
-          <ul>${itemLines}</ul>
-          <p>Thank you for choosing us!</p>
-        `;
-        
-        const mailOptions = {
-          from: process.env.EMAIL_USER,
-          to: user.email,
-          subject: `Items Returned Successfully: #${order._id.toString().slice(-8).toUpperCase()}`,
-          text:
-`Dear ${user.name},\n\nYour order has been returned.\n\nOrder ID: ${order._id}\nDelivery Address: ${order.deliveryAddress}\nDelivery Instructions: ${order.deliveryInstructions || 'N/A'}\nPayment Method: ${order.paymentMethod}\nTotal Amount: ₹${order.totalAmount}\nPlaced at: ${order.createdAt}\n\nThank you for choosing us!`,
-          html: htmlBody
-        };
-        
-        console.log('DEBUG: Sending return confirmation email to:', user.email);
-        await transporter.sendMail(mailOptions);
-        console.log('Return confirmation email sent to user:', user.email, 'for order:', order._id);
-      } catch (userMailErr) {
-        console.error('Failed to send return confirmation email to user for order', order._id, userMailErr);
-      }
-    }
-
-    await order.save();
-
-    res.json({
-      success: true,
-      data: order
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// TEMP DEBUG: Get all orders with full user and item info
-router.get('/debug-orders', async (req, res) => {
-  try {
-    const orders = await Order.find({})
-      .populate('user')
-      .populate('items.product');
-    res.json({ success: true, count: orders.length, data: orders });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
 
 module.exports = router; 

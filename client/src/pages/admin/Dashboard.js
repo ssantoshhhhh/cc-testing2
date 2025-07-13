@@ -33,7 +33,7 @@ const AdminDashboard = () => {
   );
 
   const stats = dashboardData?.data?.stats;
-  const recentOrders = dashboardData?.data?.recentOrders;
+  const recentProducts = dashboardData?.data?.recentProducts;
   const lowStockProducts = dashboardData?.data?.lowStockProducts;
 
   // Auto-unlock audio on component mount
@@ -73,8 +73,8 @@ const AdminDashboard = () => {
 
   // Play sound if a new order is detected
   useEffect(() => {
-    if (audioUnlocked && recentOrders && recentOrders.length > 0) {
-      const latestOrderId = recentOrders[0]._id;
+    if (audioUnlocked && recentProducts && recentProducts.length > 0) {
+      const latestOrderId = recentProducts[0]._id;
       if (lastOrderIdRef.current && lastOrderIdRef.current !== latestOrderId) {
         // New order detected
         if (audioRef.current) {
@@ -84,7 +84,7 @@ const AdminDashboard = () => {
       }
       lastOrderIdRef.current = latestOrderId;
     }
-  }, [recentOrders, audioUnlocked]);
+  }, [recentProducts, audioUnlocked]);
 
   // Handler to unlock audio
   const handleUnlockAudio = () => {
@@ -242,7 +242,7 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* Total Orders */}
+          {/* Total Transactions */}
           <div className="bg-white rounded-lg shadow-lg p-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -251,52 +251,34 @@ const AdminDashboard = () => {
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-900">Total Orders</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats?.totalOrders || 0}</p>
+                <p className="text-sm font-medium text-gray-900">Total Transactions</p>
+                <p className="text-2xl font-semibold text-gray-900">{stats?.totalTransactions || 0}</p>
               </div>
             </div>
             <div className="mt-4">
-              <span className="text-sm text-gray-600">Total orders placed (excluding cancelled)</span>
+              <span className="text-sm text-gray-600">Completed marketplace transactions</span>
             </div>
           </div>
 
-          {/* Cancelled Orders */}
+          {/* Active Sellers */}
           <div className="bg-white rounded-lg shadow-lg p-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center">
-                  <FiAlertCircle className="w-5 h-5 text-white" />
+                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                  <FiUsers className="w-5 h-5 text-white" />
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-900">Cancelled Orders</p>
-                <p className="text-2xl font-semibold text-red-600">{stats?.adminCancelledOrders || 0}</p>
+                <p className="text-sm font-medium text-gray-900">Active Sellers</p>
+                <p className="text-2xl font-semibold text-gray-900">{stats?.activeSellers || 0}</p>
               </div>
             </div>
             <div className="mt-4">
-              <span className="text-sm text-red-600">Orders cancelled by admin</span>
+              <span className="text-sm text-blue-600">Users with active listings</span>
             </div>
           </div>
 
-          {/* User Cancelled Orders */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center">
-                  <FiX className="w-5 h-5 text-white" />
-                </div>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-900">User Cancelled</p>
-                <p className="text-2xl font-semibold text-orange-600">{stats?.userCancelledOrders || 0}</p>
-              </div>
-            </div>
-            <div className="mt-4">
-              <span className="text-sm text-orange-600">Orders cancelled by users</span>
-            </div>
-          </div>
-
-          {/* Active Rentals */}
+          {/* Total Products */}
           <div className="bg-white rounded-lg shadow-lg p-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -305,12 +287,12 @@ const AdminDashboard = () => {
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-900">Active Rentals</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats?.activeRentals || 0}</p>
+                <p className="text-sm font-medium text-gray-900">Total Products</p>
+                <p className="text-2xl font-semibold text-gray-900">{stats?.totalProducts || 0}</p>
               </div>
             </div>
             <div className="mt-4">
-              <span className="text-sm text-yellow-600">Currently active</span>
+              <span className="text-sm text-yellow-600">Available for sale</span>
             </div>
           </div>
 
@@ -343,12 +325,12 @@ const AdminDashboard = () => {
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-900">Pending Orders</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats?.pendingOrders || 0}</p>
+                <p className="text-sm font-medium text-gray-900">Active Listings</p>
+                <p className="text-2xl font-semibold text-gray-900">{stats?.activeListings || 0}</p>
               </div>
             </div>
             <div className="mt-4">
-              <span className="text-sm text-orange-600">Awaiting confirmation</span>
+              <span className="text-sm text-orange-600">Currently listed items</span>
             </div>
           </div>
 
@@ -360,8 +342,8 @@ const AdminDashboard = () => {
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-900">Overdue Rentals</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats?.overdueRentals || 0}</p>
+                <p className="text-sm font-medium text-gray-900">Reported Items</p>
+                <p className="text-2xl font-semibold text-gray-900">{stats?.reportedItems || 0}</p>
               </div>
             </div>
             <div className="mt-4">
@@ -377,24 +359,24 @@ const AdminDashboard = () => {
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-900">Total Products</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats?.totalProducts || 0}</p>
+                <p className="text-sm font-medium text-gray-900">Categories</p>
+                <p className="text-2xl font-semibold text-gray-900">{stats?.totalCategories || 0}</p>
               </div>
             </div>
             <div className="mt-4">
-              <span className="text-sm text-indigo-600">Available for rent</span>
+              <span className="text-sm text-indigo-600">Product categories</span>
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Recent Orders */}
+          {/* Recent Products */}
           <div className="bg-white rounded-lg shadow-lg overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">Recent Orders</h2>
+                <h2 className="text-lg font-semibold text-gray-900">Recent Products</h2>
                 <Link
-                  to="/admin/orders"
+                  to="/admin/products"
                   className="text-sm text-green-600 hover:text-green-700 font-medium"
                 >
                   View All
@@ -402,22 +384,21 @@ const AdminDashboard = () => {
               </div>
             </div>
             <div className="divide-y divide-gray-200">
-              {recentOrders && recentOrders.length > 0 ? (
-                recentOrders.map((order) => (
-                  <div key={order._id} className="px-6 py-4">
+              {recentProducts && recentProducts.length > 0 ? (
+                recentProducts.map((product) => (
+                  <div key={product._id} className="px-6 py-4">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-gray-900">
-                          Order #{order._id.slice(-8).toUpperCase()}
+                          {product.name}
                         </p>
                         <p className="text-sm text-gray-600">
-                          {order.user?.name || 'Unknown User'} • {formatDate(order.createdAt)}
+                          {product.seller?.name || 'Unknown Seller'} • {formatDate(product.createdAt)}
                         </p>
                       </div>
                       <div className="flex items-center space-x-2">
-                        {getStatusBadge(order.status)}
                         <span className="text-sm font-medium text-gray-900">
-                          ₹{order.totalAmount || order.items.reduce((total, item) => total + (item.totalPrice || 0), 0)}
+                          ₹{product.price || 0}
                         </span>
                       </div>
                     </div>
@@ -425,7 +406,7 @@ const AdminDashboard = () => {
                 ))
               ) : (
                 <div className="px-6 py-8 text-center">
-                  <p className="text-gray-600">No recent orders</p>
+                  <p className="text-gray-600">No recent products</p>
                 </div>
               )}
             </div>
@@ -446,20 +427,7 @@ const AdminDashboard = () => {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-900">Manage Products</p>
-                  <p className="text-sm text-gray-600">Add, edit, or remove rental items</p>
-                </div>
-              </Link>
-
-              <Link
-                to="/admin/orders"
-                className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <FiShoppingCart className="w-5 h-5 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-900">Process Orders</p>
-                  <p className="text-sm text-gray-600">Confirm and track rental orders</p>
+                  <p className="text-sm text-gray-600">Monitor and moderate marketplace listings</p>
                 </div>
               </Link>
 
@@ -477,15 +445,28 @@ const AdminDashboard = () => {
               </Link>
 
               <Link
-                to="/admin/inventory"
+                to="/admin/users"
+                className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <FiShoppingCart className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-900">Marketplace Stats</p>
+                  <p className="text-sm text-gray-600">View marketplace activity and statistics</p>
+                </div>
+              </Link>
+
+              <Link
+                to="/admin/products"
                 className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
                   <FiTrendingUp className="w-5 h-5 text-yellow-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-900">Inventory Control</p>
-                  <p className="text-sm text-gray-600">Monitor stock levels and restock</p>
+                  <p className="text-sm font-medium text-gray-900">Content Moderation</p>
+                  <p className="text-sm text-gray-600">Review and moderate marketplace content</p>
                 </div>
               </Link>
             </div>
@@ -538,23 +519,6 @@ const AdminDashboard = () => {
         )}
 
         {/* Alerts and Notifications */}
-        {stats?.overdueRentals > 0 && (
-          <div className="mt-8 bg-red-50 border border-red-200 rounded-lg p-6">
-            <div className="flex items-center">
-              <FiAlertCircle className="w-6 h-6 text-red-600 mr-3" />
-              <div>
-                <h3 className="text-lg font-medium text-red-800">Overdue Rentals Alert</h3>
-                <p className="text-red-700 mt-1">
-                  You have {stats.overdueRentals} overdue rentals that need attention. 
-                  <Link to="/admin/orders" className="ml-2 underline hover:no-underline">
-                    View overdue orders
-                  </Link>
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {lowStockProducts && lowStockProducts.length > 0 && (
           <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-6">
             <div className="flex items-center">
@@ -563,8 +527,8 @@ const AdminDashboard = () => {
                 <h3 className="text-lg font-medium text-yellow-800">Low Stock Alert</h3>
                 <p className="text-yellow-700 mt-1">
                   {lowStockProducts.length} items are running low on stock. 
-                  <Link to="/admin/inventory" className="ml-2 underline hover:no-underline">
-                    Check inventory
+                  <Link to="/admin/products" className="ml-2 underline hover:no-underline">
+                    Check products
                   </Link>
                 </p>
               </div>

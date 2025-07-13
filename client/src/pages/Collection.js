@@ -1,16 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from 'react-query';
+import { useAuth } from '../contexts/AuthContext';
 import axios from '../axios';
-import { FaSearch, FaFilter, FaSort, FaEye } from 'react-icons/fa';
+import { FaSearch, FaFilter, FaSort, FaEye, FaUser, FaMapMarkerAlt, FaClock, FaTag } from 'react-icons/fa';
+import { FiHeart, FiMessageCircle } from 'react-icons/fi';
+import ChatModal from '../components/ChatModal';
+import toast from 'react-hot-toast';
 
 const Collection = () => {
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [filters, setFilters] = useState({
     category: searchParams.get('category') || '',
     search: searchParams.get('search') || '',
     sort: searchParams.get('sort') || 'createdAt:desc',
   });
+  const [showChatModal, setShowChatModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
   const { data: productsData, isLoading, error } = useQuery(
     ['products', filters],
@@ -46,6 +53,24 @@ const Collection = () => {
     // Search is handled by the filters state
   };
 
+  const handleStartChat = (product) => {
+    if (!user) {
+      toast.error('Please login to start chat');
+      return;
+    }
+    if (user.id === product.seller?._id) {
+      toast.error('You cannot chat with yourself');
+      return;
+    }
+    console.log('Starting chat with product:', {
+      productId: product._id,
+      sellerId: product.seller?._id,
+      userId: user.id
+    });
+    setSelectedProduct(product);
+    setShowChatModal(true);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -73,9 +98,9 @@ const Collection = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Our Collection</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Campus Marketplace</h1>
           <p className="text-gray-600">
-            Browse our selection of high-quality mini drafters and lab aprons
+            Discover great deals from your fellow students - textbooks, electronics, furniture, and more!
           </p>
         </div>
 
@@ -104,8 +129,15 @@ const Collection = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
               >
                 <option value="">All Categories</option>
-                <option value="mini-drafter">Mini Drafters</option>
-                <option value="lab-apron">Lab Aprons</option>
+                <option value="books">Books & Textbooks</option>
+                <option value="electronics">Electronics</option>
+                <option value="furniture">Furniture</option>
+                <option value="clothing">Clothing</option>
+                <option value="sports">Sports Equipment</option>
+                <option value="musical-instruments">Musical Instruments</option>
+                <option value="lab-equipment">Lab Equipment</option>
+                <option value="stationery">Stationery</option>
+                <option value="other">Other</option>
               </select>
             </div>
 
@@ -118,10 +150,10 @@ const Collection = () => {
               >
                 <option value="createdAt:desc">Newest First</option>
                 <option value="createdAt:asc">Oldest First</option>
-                <option value="pricePerDay:asc">Price: Low to High</option>
-                <option value="pricePerDay:desc">Price: High to Low</option>
-                <option value="name:asc">Name: A to Z</option>
-                <option value="name:desc">Name: Z to A</option>
+                <option value="price:asc">Price: Low to High</option>
+                <option value="price:desc">Price: High to Low</option>
+                <option value="title:asc">Name: A to Z</option>
+                <option value="title:desc">Name: Z to A</option>
               </select>
             </div>
           </div>
@@ -138,84 +170,124 @@ const Collection = () => {
         {products.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {products.map((product) => {
-              const isOutOfStock = product.availableQuantity === 0;
+              const isSold = product.isSold;
               return (
                 <div
                   key={product._id}
-                  className={`bg-white rounded-lg shadow-soft overflow-hidden hover:shadow-medium transition-shadow duration-300 ${
-                    isOutOfStock ? 'opacity-75' : ''
+                  className={`bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 ${
+                    isSold ? 'opacity-75' : ''
                   }`}
                 >
                   {/* Product Image */}
-                  <div className="aspect-w-16 aspect-h-9 bg-gray-200 relative">
+                  <div className="relative h-48 bg-gray-200">
                     <img
-                      src={product.images[0] || 'https://via.placeholder.com/400x300?text=Product'}
-                      alt={product.name}
-                      className="w-full h-48 object-cover"
+                      src={product.images && product.images[0] ? product.images[0] : '/placeholder-product.jpg'}
+                      alt={product.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        console.log('Image failed to load:', e.target.src);
+                        e.target.src = '/placeholder-product.jpg';
+                        e.target.onerror = null; // Prevent infinite loop
+                      }}
                     />
-                    {isOutOfStock && (
+                    {isSold && (
                       <div className="absolute inset-0 bg-red-500 bg-opacity-75 flex items-center justify-center">
                         <div className="text-white text-center">
-                          <div className="text-lg font-bold mb-1">Out of Stock</div>
-                          <div className="text-xs">Currently Unavailable</div>
+                          <div className="text-lg font-bold mb-1">Sold</div>
+                          <div className="text-xs">No longer available</div>
                         </div>
                       </div>
                     )}
+                    {/* Category Badge */}
+                    <div className="absolute top-2 left-2">
+                      <span className="px-2 py-1 text-xs font-medium bg-green-600 text-white rounded-full capitalize">
+                        {product.category}
+                      </span>
+                    </div>
+                    {/* Favorite Button */}
+                    <button className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors">
+                      <FiHeart className="w-4 h-4 text-gray-400 hover:text-red-500" />
+                    </button>
                   </div>
 
                   {/* Product Info */}
                   <div className="p-4">
-                    {/* Category Badge */}
-                    <div className="flex items-center justify-between mb-2">
-                      <span className={`badge ${
-                        product.category === 'mini-drafter' ? 'badge-info' : 'badge-success'
-                      }`}>
-                        {product.category === 'mini-drafter' ? 'Mini Drafter' : 'Lab Apron'}
-                      </span>
-                      <span className={`text-sm ${
-                        isOutOfStock ? 'text-red-600 font-medium' : 'text-gray-500'
-                      }`}>
-                        {isOutOfStock ? 'Out of Stock' : `${product.availableQuantity} available`}
-                      </span>
-                    </div>
-
-                    {/* Product Name */}
+                    {/* Product Title */}
                     <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
-                      {product.name}
+                      {product.title}
                     </h3>
 
                     {/* Description */}
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">
                       {product.description}
                     </p>
 
-                    {/* Price and Action */}
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-xl font-bold text-green-600">
-                          ₹{product.pricePerDay}
-                        </span>
-                        <span className="text-sm text-gray-500">/day</span>
-                      </div>
-                      <Link
-                        to={`/product/${product._id}`}
-                        className={`text-sm px-4 py-2 flex items-center rounded-lg transition-colors ${
-                          isOutOfStock 
-                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                            : 'btn-primary hover:bg-green-700'
-                        }`}
-                        onClick={isOutOfStock ? (e) => e.preventDefault() : undefined}
-                      >
-                        <FaEye className="mr-1" />
-                        {isOutOfStock ? 'Unavailable' : 'View'}
-                      </Link>
+                    {/* Seller Info */}
+                    <div className="flex items-center space-x-2 mb-3 text-sm text-gray-500">
+                      <FaUser className="w-3 h-3" />
+                      <span>{product.seller?.name || 'Anonymous'}</span>
+                      {product.location && (
+                        <>
+                          <span>•</span>
+                          <FaMapMarkerAlt className="w-3 h-3" />
+                          <span>{product.location}</span>
+                        </>
+                      )}
                     </div>
 
-                    {/* Condition */}
-                    <div className="mt-2">
-                      <span className="text-xs text-gray-500 capitalize">
-                        Condition: {product.condition}
-                      </span>
+                    {/* Price */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <span className="text-xl font-bold text-green-600">
+                          ₹{product.price}
+                        </span>
+                        {product.originalPrice && product.originalPrice > product.price && (
+                          <span className="text-sm text-gray-500 line-through ml-2">
+                            ₹{product.originalPrice}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          isSold 
+                            ? 'bg-red-100 text-red-600' 
+                            : 'bg-green-100 text-green-600'
+                        }`}>
+                          {isSold ? 'Sold' : 'Available'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Condition and Negotiable */}
+                    <div className="flex items-center justify-between mb-4 text-xs text-gray-500">
+                      <span className="capitalize">Condition: {product.condition}</span>
+                      {product.isNegotiable && (
+                        <span className="text-green-600 font-medium">Negotiable</span>
+                      )}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex space-x-2">
+                      <Link
+                        to={`/product/${product._id}`}
+                        className={`flex-1 text-sm px-4 py-2 rounded-lg transition-colors flex items-center justify-center ${
+                          isSold 
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                            : 'bg-green-600 text-white hover:bg-green-700'
+                        }`}
+                        onClick={isSold ? (e) => e.preventDefault() : undefined}
+                      >
+                        <FaEye className="mr-1" />
+                        {isSold ? 'Sold' : 'View Details'}
+                      </Link>
+                      {!isSold && (
+                        <button 
+                          onClick={() => handleStartChat(product)}
+                          className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                          <FiMessageCircle className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -278,6 +350,19 @@ const Collection = () => {
               )}
             </nav>
           </div>
+        )}
+
+        {/* Chat Modal */}
+        {showChatModal && selectedProduct && (
+          <ChatModal
+            isOpen={showChatModal}
+            onClose={() => {
+              setShowChatModal(false);
+              setSelectedProduct(null);
+            }}
+            product={selectedProduct}
+            sellerId={selectedProduct.seller?._id}
+          />
         )}
       </div>
     </div>

@@ -1,7 +1,6 @@
 const express = require('express');
 const User = require('../models/User');
 const Product = require('../models/Product');
-const Order = require('../models/Order');
 
 const router = express.Router();
 
@@ -16,30 +15,14 @@ router.get('/stats', async (req, res) => {
     // Get total products
     const totalProducts = await Product.countDocuments({ isActive: true });
     
-    // Get total orders (excluding cancelled)
-    const totalOrders = await Order.countDocuments({ status: { $ne: 'cancelled' } });
-    
-    // Get active rentals
-    const activeRentals = await Order.countDocuments({
-      status: { $in: ['confirmed', 'rented'] }
+    // Get active sellers
+    const activeSellers = await User.countDocuments({ 
+      role: 'user',
+      isActive: true,
+      isSeller: true
     });
     
-    // Get total revenue (excluding cancelled orders)
-    const revenueStats = await Order.aggregate([
-      {
-        $match: {
-          status: { $ne: 'cancelled' }
-        }
-      },
-      {
-        $group: {
-          _id: null,
-          totalRevenue: { $sum: '$totalAmount' }
-        }
-      }
-    ]);
-
-    // Get total items available for rent
+    // Get total items available for sale
     const inventoryStats = await Product.aggregate([
       { $match: { isActive: true } },
       {
@@ -51,14 +34,18 @@ router.get('/stats', async (req, res) => {
       }
     ]);
 
+    // Get total transactions (placeholder for future implementation)
+    const totalTransactions = 0;
+    const totalRevenue = 0;
+
     res.json({
       success: true,
       data: {
         totalUsers,
         totalProducts,
-        totalOrders,
-        activeRentals,
-        totalRevenue: revenueStats[0]?.totalRevenue || 0,
+        activeSellers,
+        totalTransactions,
+        totalRevenue,
         totalItems: inventoryStats[0]?.totalItems || 0,
         availableItems: inventoryStats[0]?.availableItems || 0
       }

@@ -179,7 +179,7 @@ const Contact = () => {
                 >
                   <option value="">Select a subject</option>
                   <option value="general">General Inquiry</option>
-                  <option value="rental">Rental Questions</option>
+                  <option value="marketplace">Marketplace Questions</option>
                   <option value="support">Technical Support</option>
                   <option value="feedback">Feedback</option>
                   <option value="partnership">Partnership</option>
@@ -272,30 +272,30 @@ const Contact = () => {
               
               <div className="space-y-4">
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">How do I rent equipment?</h4>
+                  <h4 className="font-semibold text-gray-900 mb-2">How do I buy or sell items?</h4>
                   <p className="text-gray-600 text-sm">
-                    Simply browse our collection, add items to your cart, and complete the checkout process. You'll need to create an account first.
+                    Simply browse our collection, contact sellers directly, and arrange meetups on campus. You'll need to create an account first.
                   </p>
                 </div>
                 
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">What is the rental period?</h4>
+                  <h4 className="font-semibold text-gray-900 mb-2">How do I list my items for sale?</h4>
                   <p className="text-gray-600 text-sm">
-                    You can choose from 1 day to several weeks. The rental period is flexible to accommodate your academic needs.
+                    Create an account, go to your seller dashboard, and add your products with photos and descriptions.
                   </p>
                 </div>
                 
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">How do I return equipment?</h4>
+                  <h4 className="font-semibold text-gray-900 mb-2">How do I contact sellers?</h4>
                   <p className="text-gray-600 text-sm">
-                    Return equipment to our campus location during business hours. Make sure to bring your rental confirmation.
+                    Use the "Contact Seller" button on any product page to message the seller directly through our platform.
                   </p>
                 </div>
                 
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">What if I'm late returning equipment?</h4>
+                  <h4 className="font-semibold text-gray-900 mb-2">Is it safe to buy from other students?</h4>
                   <p className="text-gray-600 text-sm">
-                    Late returns incur a daily penalty fee. Please contact us if you need an extension.
+                    Yes! All users are verified students with campus IDs. Meet in public campus locations for transactions.
                   </p>
                 </div>
               </div>

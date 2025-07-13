@@ -63,8 +63,8 @@ const AdminProducts = () => {
   );
 
   const filteredProducts = products?.data?.filter(product =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.description.toLowerCase().includes(searchTerm.toLowerCase())
+    (product.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (product.description?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   ) || [];
 
   const handleDelete = (productId) => {

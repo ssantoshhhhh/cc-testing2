@@ -1,20 +1,18 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useCart } from '../contexts/CartContext';
 import { 
   FaSearch, 
   FaUser, 
-  FaShoppingCart, 
   FaBars, 
   FaTimes,
   FaSignOutAlt,
   FaCog
 } from 'react-icons/fa';
+import { FiMessageCircle } from 'react-icons/fi';
 
 const Layout = ({ children }) => {
   const { user, isAuthenticated, logout, getProfilePictureUrl } = useAuth();
-  const { getCartItemCount } = useCart();
   const location = useLocation();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -114,21 +112,6 @@ const Layout = ({ children }) => {
                 {isMenuOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
               </button>
 
-              {/* Cart */}
-              {isAuthenticated && (
-                <Link
-                  to="/cart"
-                  className="relative p-2 rounded-md text-gray-700 hover:text-green-600 hover:bg-green-50 transition-colors duration-200"
-                >
-                  <FaShoppingCart size={20} />
-                  {getCartItemCount() > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                      {getCartItemCount()}
-                    </span>
-                  )}
-                </Link>
-              )}
-
               {/* Profile/Login */}
               {isAuthenticated ? (
                 <div className="relative">
@@ -164,12 +147,28 @@ const Layout = ({ children }) => {
                         Profile
                       </Link>
                       <Link
-                        to="/orders"
+                        to="/seller-dashboard"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600"
                         onClick={() => setIsProfileMenuOpen(false)}
                       >
                         <FaCog className="inline mr-2" />
-                        My Orders
+                        Sell Items
+                      </Link>
+                      <Link
+                        to="/buyer-dashboard"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600"
+                        onClick={() => setIsProfileMenuOpen(false)}
+                      >
+                        <FaCog className="inline mr-2" />
+                        My Purchases
+                      </Link>
+                      <Link
+                        to="/chats"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600"
+                        onClick={() => setIsProfileMenuOpen(false)}
+                      >
+                        <FiMessageCircle className="inline mr-2" />
+                        My Chats
                       </Link>
                       {user?.role === 'admin' && (
                         <Link
@@ -258,7 +257,7 @@ const Layout = ({ children }) => {
             <div>
               <h3 className="text-lg font-semibold mb-4">Campus Connect</h3>
               <p className="text-gray-300">
-                Your trusted platform for renting campus equipment and supplies.
+                Your trusted platform for buying and selling on campus.
               </p>
             </div>
             <div>
@@ -273,8 +272,10 @@ const Layout = ({ children }) => {
             <div>
               <h4 className="text-md font-semibold mb-4">Categories</h4>
               <ul className="space-y-2">
-                <li><Link to="/collection?category=mini-drafter" className="text-gray-300 hover:text-white">Mini Drafters</Link></li>
-                <li><Link to="/collection?category=lab-apron" className="text-gray-300 hover:text-white">Lab Aprons</Link></li>
+                <li><Link to="/collection?category=electronics" className="text-gray-300 hover:text-white">Electronics</Link></li>
+                <li><Link to="/collection?category=books" className="text-gray-300 hover:text-white">Books</Link></li>
+                <li><Link to="/collection?category=furniture" className="text-gray-300 hover:text-white">Furniture</Link></li>
+                <li><Link to="/collection?category=clothing" className="text-gray-300 hover:text-white">Clothing</Link></li>
               </ul>
             </div>
             <div>

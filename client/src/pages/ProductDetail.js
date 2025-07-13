@@ -1,19 +1,22 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useAuth } from '../contexts/AuthContext';
-import { useCart } from '../contexts/CartContext';
-import { FiShoppingCart, FiCalendar, FiStar, FiTruck, FiShield, FiRefreshCw } from 'react-icons/fi';
+import { FiMessageCircle, FiStar, FiTruck, FiShield, FiRefreshCw, FiUser, FiPhone, FiMail, FiHeart } from 'react-icons/fi';
+import { FaWhatsapp } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import axios from '../axios';
+import ChatModal from '../components/ChatModal';
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { addToCart } = useCart();
-  const [rentalDays, setRentalDays] = useState(1);
-  const [quantity, setQuantity] = useState(1);
+  const queryClient = useQueryClient();
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [showMarkSoldModal, setShowMarkSoldModal] = useState(false);
+  const [selectedBuyer, setSelectedBuyer] = useState('');
+  const [showChatModal, setShowChatModal] = useState(false);
 
   const { data: productResponse, isLoading, error } = useQuery(
     ['product', id],
@@ -29,25 +32,79 @@ const ProductDetail = () => {
 
   const product = productResponse?.data;
 
-  const handleAddToCart = () => {
+  const markAsSoldMutation = useMutation(
+    async ({ productId, buyerId }) => {
+      await axios.put(`/api/products/${productId}/mark-sold`, { buyerId });
+    },
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['product', id]);
+        toast.success('Product marked as sold successfully');
+        setShowMarkSoldModal(false);
+      },
+      onError: (error) => {
+        toast.error(error.response?.data?.message || 'Failed to mark as sold');
+      },
+    }
+  );
+
+  const toggleFavoriteMutation = useMutation(
+    async () => {
+      await axios.post(`/api/products/${id}/favorite`);
+    },
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['product', id]);
+        toast.success('Favorite updated');
+      },
+      onError: (error) => {
+        toast.error(error.response?.data?.message || 'Failed to update favorite');
+      },
+    }
+  );
+
+  const handleContactSeller = () => {
     if (!user) {
-      toast.error('Please login to add items to cart');
+      toast.error('Please login to contact seller');
       navigate('/login');
       return;
     }
-    addToCart(product, quantity, rentalDays);
-    toast.success('Item added to cart!');
+    setShowContactModal(true);
   };
 
-  const handleRentNow = () => {
+  const handleStartChat = () => {
     if (!user) {
-      toast.error('Please login to rent items');
+      toast.error('Please login to start chat');
       navigate('/login');
       return;
     }
-    addToCart(product, quantity, rentalDays);
-    navigate('/checkout');
+    if (user.id === product?.seller?._id) {
+      toast.error('You cannot chat with yourself');
+      return;
+    }
+    setShowChatModal(true);
   };
+
+  const handleMarkAsSold = () => {
+    if (!selectedBuyer) {
+      toast.error('Please select a buyer');
+      return;
+    }
+    markAsSoldMutation.mutate({ productId: id, buyerId: selectedBuyer });
+  };
+
+  const handleToggleFavorite = () => {
+    if (!user) {
+      toast.error('Please login to add to favorites');
+      navigate('/login');
+      return;
+    }
+    toggleFavoriteMutation.mutate();
+  };
+
+  const isOwner = user && product?.seller?._id === user.id;
+  const isSold = product?.isSold;
+  const isFavorited = product?.favorites?.includes(user?.id);
 
   if (isLoading) {
     return (
@@ -72,11 +129,6 @@ const ProductDetail = () => {
       </div>
     );
   }
-
-  // Find the pricePerDay from product, default to 0 if not available
-  const pricePerDay = Number(product.pricePerDay) || 0;
-  const totalPrice = pricePerDay * rentalDays * quantity;
-  const isOutOfStock = product.availableQuantity === 0;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -106,7 +158,7 @@ const ProductDetail = () => {
             <li>
               <div className="flex items-center">
                 <span className="mx-2 text-gray-400">/</span>
-                <span className="text-gray-900">{product.name}</span>
+                <span className="text-gray-900">{product.title}</span>
               </div>
             </li>
           </ol>
@@ -118,40 +170,73 @@ const ProductDetail = () => {
             <div className="space-y-4">
               <div className="aspect-w-1 aspect-h-1 w-full relative">
                 <img
-                  src={product.images && product.images[0] ? product.images[0] : '/placeholder-product.svg'}
-                  alt={product.name}
+                  src={product.images && product.images[0] ? product.images[0] : '/placeholder-product.jpg'}
+                  alt={product.title}
                   className="w-full h-96 object-cover rounded-lg shadow-md"
+                  onError={(e) => {
+                    console.log('Image failed to load:', e.target.src);
+                    e.target.src = '/placeholder-product.jpg';
+                    e.target.onerror = null; // Prevent infinite loop
+                  }}
                 />
-                {isOutOfStock && (
+                {isSold && (
                   <div className="absolute inset-0 bg-red-500 bg-opacity-75 flex items-center justify-center rounded-lg">
                     <div className="text-white text-center">
-                      <div className="text-2xl font-bold mb-2">Out of Stock</div>
-                      <div className="text-sm">This item is currently unavailable</div>
+                      <div className="text-2xl font-bold mb-2">Sold</div>
+                      <div className="text-sm">This item is no longer available</div>
                     </div>
                   </div>
                 )}
               </div>
+              
+              {/* Additional Images */}
+              {product.images && product.images.length > 1 && (
+                <div className="grid grid-cols-4 gap-2">
+                  {product.images.slice(1, 5).map((image, index) => (
+                    <img
+                      key={index}
+                      src={image}
+                      alt={`${product.title} ${index + 2}`}
+                      className="w-full h-20 object-cover rounded cursor-pointer hover:opacity-75"
+                    />
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Product Info */}
             <div className="space-y-6">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
+                <div className="flex items-center justify-between mb-2">
+                  <h1 className="text-3xl font-bold text-gray-900">{product.title}</h1>
+                  <button
+                    onClick={handleToggleFavorite}
+                    className={`p-2 rounded-full ${
+                      isFavorited ? 'text-red-500' : 'text-gray-400'
+                    } hover:text-red-500 transition-colors`}
+                  >
+                    <FiHeart className={`w-6 h-6 ${isFavorited ? 'fill-current' : ''}`} />
+                  </button>
+                </div>
+                
                 <div className="flex items-center space-x-2 mb-4">
                   <div className="flex items-center">
                     {[...Array(5)].map((_, i) => (
                       <FiStar
                         key={i}
                         className={`w-5 h-5 ${
-                          i < Math.floor(product.rating || 4)
+                          i < Math.floor(product.seller?.sellerRating || 0)
                             ? 'text-yellow-400 fill-current'
                             : 'text-gray-300'
                         }`}
                       />
                     ))}
                   </div>
-                  <span className="text-gray-600">({product.rating || 4}.0)</span>
+                  <span className="text-gray-600">({product.seller?.sellerRating || 0}.0)</span>
+                  <span className="text-gray-400">•</span>
+                  <span className="text-gray-600">{product.views} views</span>
                 </div>
+                
                 <p className="text-gray-600 text-lg">{product.description}</p>
               </div>
 
@@ -159,136 +244,207 @@ const ProductDetail = () => {
               <div className="bg-gray-50 p-4 rounded-lg">
                 <div className="flex items-center justify-between">
                   <span className="text-2xl font-bold text-green-600">
-                    ₹{pricePerDay}/day
+                    ₹{product.price}
                   </span>
                   <div className="text-right">
-                    {isOutOfStock ? (
-                      <span className="text-sm text-red-600 font-medium">Out of Stock</span>
+                    {isSold ? (
+                      <span className="text-sm text-red-600 font-medium">Sold</span>
                     ) : (
-                      <span className="text-sm text-gray-500">
-                        {product.availableQuantity} items available
-                      </span>
+                      <span className="text-sm text-gray-500">Available</span>
                     )}
+                  </div>
+                </div>
+                {product.originalPrice && product.originalPrice > product.price && (
+                  <div className="mt-2">
+                    <span className="text-sm text-gray-500 line-through">₹{product.originalPrice}</span>
+                    <span className="text-sm text-green-600 ml-2">
+                      {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% off
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Product Details */}
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h3 className="font-semibold text-gray-900 mb-3">Product Details</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">Category:</span>
+                    <span className="ml-2 font-medium capitalize">{product.category}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Condition:</span>
+                    <span className="ml-2 font-medium capitalize">{product.condition}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Location:</span>
+                    <span className="ml-2 font-medium">{product.location}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Negotiable:</span>
+                    <span className="ml-2 font-medium">{product.isNegotiable ? 'Yes' : 'No'}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Rental Options */}
-              {!isOutOfStock && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Rental Duration (days)
-                    </label>
-                    <select
-                      value={rentalDays}
-                      onChange={(e) => setRentalDays(parseInt(e.target.value))}
-                      className="input-field"
-                    >
-                      {[1, 2, 3, 4, 5, 6, 7, 14, 30].map((days) => (
-                        <option key={days} value={days}>
-                          {days} {days === 1 ? 'day' : 'days'}
-                        </option>
-                      ))}
-                    </select>
+              {/* Seller Information */}
+              <div className="bg-green-50 p-4 rounded-lg">
+                <h3 className="font-semibold text-gray-900 mb-3">Seller Information</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <FiUser className="text-green-600" />
+                    <span className="text-gray-700">{product.seller?.name || 'Anonymous'}</span>
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Quantity
-                    </label>
-                    <div className="flex items-center space-x-3">
-                      <button
-                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                        className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50"
-                      >
-                        -
-                      </button>
-                      <span className="text-lg font-medium w-12 text-center">{quantity}</span>
-                      <button
-                        onClick={() => setQuantity(Math.min(product.availableQuantity, quantity + 1))}
-                        className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50"
-                      >
-                        +
-                      </button>
+                  {product.contactInfo?.phone && (
+                    <div className="flex items-center space-x-2">
+                      <FiPhone className="text-green-600" />
+                      <span className="text-gray-700">{product.contactInfo.phone}</span>
                     </div>
-                  </div>
-
-                  {/* Total Price */}
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <div className="flex justify-between items-center">
-                      <span className="text-lg font-medium text-gray-900">Total Price:</span>
-                      <span className="text-2xl font-bold text-green-600">
-                        ₹{totalPrice}
-                      </span>
+                  )}
+                  {product.contactInfo?.email && (
+                    <div className="flex items-center space-x-2">
+                      <FiMail className="text-green-600" />
+                      <span className="text-gray-700">{product.contactInfo.email}</span>
                     </div>
-                    <p className="text-sm text-gray-600 mt-1">
-                      For {rentalDays} {rentalDays === 1 ? 'day' : 'days'} × {quantity} {quantity === 1 ? 'item' : 'items'}
-                    </p>
-                  </div>
+                  )}
+                  {product.contactInfo?.whatsapp && (
+                    <div className="flex items-center space-x-2">
+                      <FaWhatsapp className="text-green-600" />
+                      <span className="text-gray-700">{product.contactInfo.whatsapp}</span>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
 
               {/* Action Buttons */}
-              <div className="flex space-x-4">
-                {isOutOfStock ? (
-                  <button
-                    disabled
-                    className="flex-1 bg-gray-400 text-white font-medium py-3 px-6 rounded-lg cursor-not-allowed flex items-center justify-center space-x-2"
-                  >
-                    <FiShoppingCart className="w-5 h-5" />
-                    <span>Out of Stock</span>
-                  </button>
-                ) : (
+              <div className="space-y-4">
+                {!isSold && !isOwner && (
                   <>
                     <button
-                      onClick={handleAddToCart}
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2"
+                      onClick={handleStartChat}
+                      className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
                     >
-                      <FiShoppingCart className="w-5 h-5" />
-                      <span>Add to Cart</span>
+                      <FiMessageCircle />
+                      <span>Start Chat</span>
                     </button>
                     <button
-                      onClick={handleRentNow}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2"
+                      onClick={handleContactSeller}
+                      className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
                     >
-                      <FiCalendar className="w-5 h-5" />
-                      <span>Rent Now</span>
+                      <FiMessageCircle />
+                      <span>Contact Seller</span>
                     </button>
                   </>
+                )}
+                
+                {isOwner && !isSold && (
+                  <button
+                    onClick={() => setShowMarkSoldModal(true)}
+                    className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
+                  >
+                    <FiShield />
+                    <span>Mark as Sold</span>
+                  </button>
                 )}
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Product Features */}
-          <div className="border-t border-gray-200 p-8">
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">Product Features</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="flex items-start space-x-3">
-                <FiTruck className="w-6 h-6 text-green-600 mt-1" />
-                <div>
-                  <h4 className="font-medium text-gray-900">Free Campus Delivery</h4>
-                  <p className="text-gray-600 text-sm">We deliver to your campus location</p>
+        {/* Contact Modal */}
+        {showContactModal && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+              <div className="mt-3">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Contact Seller</h3>
+                <div className="space-y-4">
+                  {product.contactInfo?.phone && (
+                    <a
+                      href={`tel:${product.contactInfo.phone}`}
+                      className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50"
+                    >
+                      <FiPhone className="text-blue-600" />
+                      <span>Call: {product.contactInfo.phone}</span>
+                    </a>
+                  )}
+                  {product.contactInfo?.whatsapp && (
+                    <a
+                      href={`https://wa.me/${product.contactInfo.whatsapp}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50"
+                    >
+                      <FaWhatsapp className="text-green-600" />
+                      <span>WhatsApp: {product.contactInfo.whatsapp}</span>
+                    </a>
+                  )}
+                  {product.contactInfo?.email && (
+                    <a
+                      href={`mailto:${product.contactInfo.email}`}
+                      className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50"
+                    >
+                      <FiMail className="text-blue-600" />
+                      <span>Email: {product.contactInfo.email}</span>
+                    </a>
+                  )}
                 </div>
-              </div>
-              <div className="flex items-start space-x-3">
-                <FiShield className="w-6 h-6 text-green-600 mt-1" />
-                <div>
-                  <h4 className="font-medium text-gray-900">Quality Assured</h4>
-                  <p className="text-gray-600 text-sm">All equipment is tested and maintained</p>
-                </div>
-              </div>
-              <div className="flex items-start space-x-3">
-                <FiRefreshCw className="w-6 h-6 text-green-600 mt-1" />
-                <div>
-                  <h4 className="font-medium text-gray-900">Easy Returns</h4>
-                  <p className="text-gray-600 text-sm">Simple return process with no hassle</p>
+                <div className="mt-6">
+                  <button
+                    onClick={() => setShowContactModal(false)}
+                    className="w-full bg-gray-300 text-gray-700 py-2 px-4 rounded hover:bg-gray-400"
+                  >
+                    Close
+                  </button>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Mark as Sold Modal */}
+        {showMarkSoldModal && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+              <div className="mt-3">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Mark as Sold</h3>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Buyer ID (Optional)</label>
+                  <input
+                    type="text"
+                    value={selectedBuyer}
+                    onChange={(e) => setSelectedBuyer(e.target.value)}
+                    placeholder="Enter buyer's user ID"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => setShowMarkSoldModal(false)}
+                    className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded hover:bg-gray-400"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleMarkAsSold}
+                    className="flex-1 bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700"
+                  >
+                    Mark Sold
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Chat Modal */}
+        {showChatModal && (
+          <ChatModal
+            isOpen={showChatModal}
+            onClose={() => setShowChatModal(false)}
+            product={product}
+            sellerId={product?.seller?._id}
+          />
+        )}
       </div>
     </div>
   );

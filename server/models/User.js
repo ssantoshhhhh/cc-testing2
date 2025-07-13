@@ -67,26 +67,53 @@ const userSchema = new mongoose.Schema({
   // Account deletion OTP fields
   deleteAccountOTP: String,
   deleteAccountOTPExpire: Date,
-  // Persistent cart for logged-in users
-  cart: [
-    {
-      product: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Product',
-        required: true
-      },
-      quantity: {
-        type: Number,
-        required: true,
-        min: 1
-      },
-      rentalDays: {
-        type: Number,
-        required: true,
-        min: 1
-      }
-    }
-  ],
+  // Seller profile fields
+  isSeller: {
+    type: Boolean,
+    default: false
+  },
+  sellerRating: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 5
+  },
+  totalSales: {
+    type: Number,
+    default: 0
+  },
+  totalTransactions: {
+    type: Number,
+    default: 0
+  },
+  sellerDescription: {
+    type: String,
+    trim: true
+  },
+  // Buyer profile fields
+  buyerRating: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 5
+  },
+  totalPurchases: {
+    type: Number,
+    default: 0
+  },
+  totalSpent: {
+    type: Number,
+    default: 0
+  },
+  // Rating counts for averaging
+  sellerRatingCount: {
+    type: Number,
+    default: 0
+  },
+  buyerRatingCount: {
+    type: Number,
+    default: 0
+  },
   resetPasswordToken: String,
   resetPasswordExpire: Date,
   resetPasswordOTP: String,

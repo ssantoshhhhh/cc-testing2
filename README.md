@@ -1,23 +1,22 @@
-# Campus Connect - Equipment Rental Platform
+# Campus Connect - Campus Marketplace Platform
 
-A full-stack web application for renting mini drafters and lab aprons at the campus level. Built with React.js, Node.js, Express.js, and MongoDB.
+A full-stack web application for buying and selling items at the campus level. Built with React.js, Node.js, Express.js, and MongoDB.
 
 ## 🌟 Features
 
 ### User Features
 - **User Authentication**: Register, login, forgot password, reset password
-- **Product Browsing**: View and search through available equipment
-- **Rental Management**: Add items to cart, select rental duration, checkout
-- **Order Tracking**: View order history, track return dates, manage overdue items
-- **Profile Management**: Update personal information and view rental statistics
+- **Product Browsing**: View and search through available items
+- **Marketplace Management**: List items for sale, contact sellers, manage transactions
+- **Profile Management**: Update personal information and view marketplace statistics
 - **Responsive Design**: Mobile-friendly interface
 
 ### Admin Features
-- **Dashboard**: Overview of users, orders, and inventory
+- **Dashboard**: Overview of users, transactions, and marketplace activity
 - **User Management**: View and manage user accounts
-- **Product Management**: Add, edit, and manage equipment inventory
-- **Order Management**: Process orders, track returns, manage penalties
-- **Inventory Control**: Monitor stock levels and restock items
+- **Product Management**: Add, edit, and manage marketplace listings
+- **Transaction Monitoring**: Track marketplace activity and user interactions
+- **Content Moderation**: Monitor and manage reported items
 
 ## 🛠️ Tech Stack
 
@@ -93,16 +92,16 @@ npm run dev
 
 ### For Users
 1. **Register/Login**: Create an account or sign in
-2. **Browse Products**: View available mini drafters and lab aprons
-3. **Add to Cart**: Select items and rental duration
-4. **Checkout**: Complete your rental order
-5. **Track Orders**: Monitor return dates and manage rentals
+2. **Browse Products**: View available items for sale
+3. **Contact Sellers**: Message sellers directly through the platform
+4. **List Items**: Add your own items for sale
+5. **Manage Transactions**: Track your buying and selling activity
 
 ### For Admins
 1. **Access Admin Panel**: Login with admin credentials
-2. **Manage Inventory**: Add, edit, or remove products
-3. **Process Orders**: Confirm rentals and track returns
-4. **User Management**: View and manage user accounts
+2. **Manage Listings**: Monitor and moderate marketplace content
+3. **User Management**: View and manage user accounts
+4. **Transaction Monitoring**: Track marketplace activity
 
 ## 🎨 Design System
 
@@ -130,4 +129,4 @@ This project is licensed under the MIT License.
 
 ---
 
-**Campus Connect** - Making equipment rental simple and efficient for students and institutions. 
+**Campus Connect** - Making campus buying and selling simple and efficient for students. 

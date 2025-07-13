@@ -5,8 +5,8 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 // Remove EmailJS import
 const User = require('../models/User');
+const Product = require('../models/Product');
 const { protect } = require('../middleware/auth');
-const Order = require('../models/Order'); // Added Order model import
 
 const router = express.Router();
 
@@ -599,15 +599,15 @@ router.post('/send-delete-account-otp', protect, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Check if user has any active orders
-    const activeOrders = await Order.find({
-      user: req.user.id,
-      status: { $in: ['confirmed', 'rented'] }
+    // Check if user has any active listings
+    const activeListings = await Product.find({
+      seller: req.user.id,
+      availableQuantity: { $gt: 0 }
     });
 
-    if (activeOrders.length > 0) {
+    if (activeListings.length > 0) {
       return res.status(400).json({ 
-        message: 'Cannot delete account with active orders. Please return all rented items first.' 
+        message: 'Cannot delete account with active listings. Please remove all your listings first.' 
       });
     }
 
@@ -680,9 +680,6 @@ router.post('/verify-delete-account-otp', [
       });
     }
 
-    // Delete user's orders first
-    await Order.deleteMany({ user: req.user.id });
-    
     // Delete the user
     await User.findByIdAndDelete(req.user.id);
 
@@ -711,15 +708,15 @@ router.post('/resend-delete-account-otp', protect, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Check if user has any active orders
-    const activeOrders = await Order.find({
-      user: req.user.id,
-      status: { $in: ['confirmed', 'rented'] }
+    // Check if user has any active listings
+    const activeListings = await Product.find({
+      seller: req.user.id,
+      availableQuantity: { $gt: 0 }
     });
 
-    if (activeOrders.length > 0) {
+    if (activeListings.length > 0) {
       return res.status(400).json({ 
-        message: 'Cannot delete account with active orders. Please return all rented items first.' 
+        message: 'Cannot delete account with active listings. Please remove all your listings first.' 
       });
     }
 
