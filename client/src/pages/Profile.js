@@ -1,26 +1,44 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useForm } from 'react-hook-form';
-import { FiUser, FiEdit2, FiSave, FiX } from 'react-icons/fi';
+import { FiUser, FiEdit2, FiSave, FiX, FiTrash2, FiAlertTriangle } from 'react-icons/fi';
 import { useQuery } from 'react-query';
 import axios from '../axios'; // use the custom axios instance
 import toast from 'react-hot-toast';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import useOrderNotifications from '../hooks/useOrderNotifications';
 import ProfilePictureUpload from '../components/ProfilePictureUpload';
 
 const Profile = () => {
-  const { user, updateProfile, getProfilePictureUrl } = useAuth();
+  const { user, updateProfile, getProfilePictureUrl, sendDeleteAccountOTP, verifyDeleteAccountOTP, resendDeleteAccountOTP } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteStep, setDeleteStep] = useState(1); // 1: confirm, 2: OTP
+  const [deleteOtp, setDeleteOtp] = useState('');
+  const [deleteOtpError, setDeleteOtpError] = useState('');
+  const [resendDisabled, setResendDisabled] = useState(false);
+  const [countdown, setCountdown] = useState(0);
   const previousOrdersRef = useRef([]);
+  const navigate = useNavigate();
   
   const {
     confirmedAudioRef,
     rejectedAudioRef,
     playOrderStatusSound
   } = useOrderNotifications();
+
+  // Countdown timer for resend button
+  useEffect(() => {
+    let timer;
+    if (countdown > 0) {
+      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    } else {
+      setResendDisabled(false);
+    }
+    return () => clearTimeout(timer);
+  }, [countdown]);
 
   // Fetch all user orders for real-time stats
   const { data: ordersData, isLoading: ordersLoading } = useQuery(
@@ -135,6 +153,76 @@ const Profile = () => {
     if (e.target === e.currentTarget) {
       setShowProfileModal(false);
     }
+  };
+
+  // Account deletion handlers
+  const handleDeleteAccountClick = () => {
+    setShowDeleteModal(true);
+    setDeleteStep(1);
+    setDeleteOtp('');
+    setDeleteOtpError('');
+  };
+
+  const handleDeleteAccountConfirm = async () => {
+    setIsLoading(true);
+    try {
+      const result = await sendDeleteAccountOTP();
+      if (result.success) {
+        setDeleteStep(2);
+        setResendDisabled(true);
+        setCountdown(60); // 60 seconds countdown
+      }
+    } catch (error) {
+      console.error('Delete account error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteOtpSubmit = async (e) => {
+    e.preventDefault();
+    if (!deleteOtp || deleteOtp.length !== 6) {
+      setDeleteOtpError('Please enter a valid 6-digit OTP');
+      return;
+    }
+
+    setIsLoading(true);
+    setDeleteOtpError('');
+
+    try {
+      const result = await verifyDeleteAccountOTP(deleteOtp);
+      if (result.success) {
+        navigate('/');
+      }
+    } catch (error) {
+      console.error('Delete OTP verification error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendDeleteOtp = async () => {
+    setIsLoading(true);
+    try {
+      const result = await resendDeleteAccountOTP();
+      if (result.success) {
+        setResendDisabled(true);
+        setCountdown(60);
+      }
+    } catch (error) {
+      console.error('Resend delete OTP error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCloseDeleteModal = () => {
+    setShowDeleteModal(false);
+    setDeleteStep(1);
+    setDeleteOtp('');
+    setDeleteOtpError('');
+    setResendDisabled(false);
+    setCountdown(0);
   };
 
   return (
@@ -510,9 +598,173 @@ const Profile = () => {
                 <p className="text-gray-600 text-center py-4">No recent orders</p>
               )}
             </div>
+
+            {/* Account Deletion Section */}
+            <div className="mt-8 border-t border-gray-200 pt-8">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <FiAlertTriangle className="h-6 w-6 text-red-600" />
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-lg font-semibold text-red-900">Danger Zone</h3>
+                    <p className="mt-1 text-sm text-red-700">
+                      Once you delete your account, there is no going back. Please be certain.
+                    </p>
+                    <div className="mt-4">
+                      <button
+                        onClick={handleDeleteAccountClick}
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                      >
+                        <FiTrash2 className="mr-2 h-4 w-4" />
+                        Delete Account
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Account Deletion Modal */}
+      {showDeleteModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
+          onClick={handleCloseDeleteModal}
+        >
+          <div className="relative bg-white rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            {deleteStep === 1 ? (
+              // Confirmation Step
+              <div>
+                <div className="flex items-center mb-4">
+                  <div className="flex-shrink-0">
+                    <FiAlertTriangle className="h-6 w-6 text-red-600" />
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-lg font-semibold text-gray-900">Delete Account</h3>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-600 mb-6">
+                  Are you sure you want to delete your account? This action cannot be undone.
+                </p>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                  <h4 className="text-sm font-medium text-red-900 mb-2">What will be deleted:</h4>
+                  <ul className="text-sm text-red-700 space-y-1">
+                    <li>• Your profile information</li>
+                    <li>• All your order history</li>
+                    <li>• Your account settings</li>
+                    <li>• All associated data</li>
+                  </ul>
+                </div>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={handleDeleteAccountConfirm}
+                    disabled={isLoading}
+                    className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center">
+                        <div className="spinner mr-2"></div>
+                        Sending OTP...
+                      </div>
+                    ) : (
+                      <>
+                        <FiTrash2 className="mr-2 h-4 w-4" />
+                        Continue
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={handleCloseDeleteModal}
+                    className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              // OTP Step
+              <div>
+                <div className="flex items-center mb-4">
+                  <div className="flex-shrink-0">
+                    <FiAlertTriangle className="h-6 w-6 text-red-600" />
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-lg font-semibold text-gray-900">Verify Deletion</h3>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-600 mb-4">
+                  We've sent a 6-digit OTP to <strong>{user?.email}</strong>
+                </p>
+                <form onSubmit={handleDeleteOtpSubmit} className="space-y-4">
+                  <div>
+                    <label htmlFor="deleteOtp" className="block text-sm font-medium text-gray-700 mb-2">
+                      Enter OTP
+                    </label>
+                    <input
+                      id="deleteOtp"
+                      type="text"
+                      value={deleteOtp}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                        setDeleteOtp(value);
+                        if (deleteOtpError) setDeleteOtpError('');
+                      }}
+                      className={`w-full px-3 py-2 border border-gray-300 rounded-md text-center text-2xl tracking-widest ${
+                        deleteOtpError ? 'border-red-500 focus:ring-red-500' : 'focus:ring-green-500 focus:border-green-500'
+                      } focus:outline-none`}
+                      placeholder="000000"
+                      maxLength={6}
+                      autoComplete="off"
+                    />
+                    {deleteOtpError && (
+                      <p className="mt-1 text-sm text-red-600">{deleteOtpError}</p>
+                    )}
+                  </div>
+                  <div className="flex space-x-3">
+                    <button
+                      type="submit"
+                      disabled={isLoading || !deleteOtp || deleteOtp.length !== 6}
+                      className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+                    >
+                      {isLoading ? (
+                        <div className="flex items-center">
+                          <div className="spinner mr-2"></div>
+                          Deleting...
+                        </div>
+                      ) : (
+                        <>
+                          <FiTrash2 className="mr-2 h-4 w-4" />
+                          Delete Account
+                        </>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCloseDeleteModal}
+                      className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={handleResendDeleteOtp}
+                      disabled={resendDisabled || isLoading}
+                      className="text-sm text-green-600 hover:text-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {resendDisabled ? `Resend in ${countdown}s` : 'Resend OTP'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

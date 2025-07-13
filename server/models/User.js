@@ -64,6 +64,9 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  // Account deletion OTP fields
+  deleteAccountOTP: String,
+  deleteAccountOTPExpire: Date,
   // Persistent cart for logged-in users
   cart: [
     {

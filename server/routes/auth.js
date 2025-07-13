@@ -6,6 +6,7 @@ const nodemailer = require('nodemailer');
 // Remove EmailJS import
 const User = require('../models/User');
 const { protect } = require('../middleware/auth');
+const Order = require('../models/Order'); // Added Order model import
 
 const router = express.Router();
 
@@ -63,6 +64,44 @@ const sendRegistrationOTP = async (userEmail, userName, otp) => {
           <li>This OTP is valid for 10 minutes only</li>
           <li>Do not share this OTP with anyone</li>
           <li>If you didn't register for this account, please ignore this email</li>
+        </ul>
+        <p>Best regards,<br>Campus Connect Team</p>
+      </div>
+    `
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
+// Send account deletion OTP email
+const sendAccountDeletionOTP = async (userEmail, userName, otp) => {
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    }
+  });
+
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: userEmail,
+    subject: 'Account Deletion OTP - Campus Connect',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">Account Deletion Request</h2>
+        <p>Hello ${userName},</p>
+        <p>You have requested to delete your account. Please use the following OTP to confirm the deletion:</p>
+        <div style="background-color: #f4f4f4; padding: 20px; text-align: center; margin: 20px 0;">
+          <h1 style="color: #dc3545; font-size: 32px; margin: 0; letter-spacing: 5px;">${otp}</h1>
+        </div>
+        <p><strong>⚠️ Warning:</strong></p>
+        <ul>
+          <li>This action is irreversible</li>
+          <li>All your data will be permanently deleted</li>
+          <li>This OTP is valid for 10 minutes only</li>
+          <li>Do not share this OTP with anyone</li>
+          <li>If you didn't request this, please ignore this email</li>
         </ul>
         <p>Best regards,<br>Campus Connect Team</p>
       </div>
@@ -546,6 +585,165 @@ router.post('/resend-otp', [
   } catch (error) {
     console.error('Resend OTP error:', error);
     res.status(500).json({ message: 'Email could not be sent' });
+  }
+});
+
+// @route   POST /api/auth/send-delete-account-otp
+// @desc    Send OTP for account deletion
+// @access  Private
+router.post('/send-delete-account-otp', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if user has any active orders
+    const activeOrders = await Order.find({
+      user: req.user.id,
+      status: { $in: ['confirmed', 'rented'] }
+    });
+
+    if (activeOrders.length > 0) {
+      return res.status(400).json({ 
+        message: 'Cannot delete account with active orders. Please return all rented items first.' 
+      });
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.deleteAccountOTP = otp;
+    user.deleteAccountOTPExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+    await user.save();
+
+    // Send OTP via email
+    try {
+      await sendAccountDeletionOTP(user.email, user.name, otp);
+      res.json({ 
+        success: true,
+        message: 'OTP sent to your email address'
+      });
+    } catch (emailError) {
+      // If email fails, clear the OTP
+      user.deleteAccountOTP = undefined;
+      user.deleteAccountOTPExpire = undefined;
+      await user.save();
+      console.error('Failed to send account deletion OTP:', emailError);
+      res.status(500).json({ message: 'Failed to send OTP. Please try again.' });
+    }
+  } catch (error) {
+    console.error('Send account deletion OTP error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/auth/verify-delete-account-otp
+// @desc    Verify OTP and delete account
+// @access  Private
+router.post('/verify-delete-account-otp', [
+  body('otp').isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits')
+], protect, async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { otp } = req.body;
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if OTP exists and is valid
+    if (!user.deleteAccountOTP || user.deleteAccountOTP !== otp) {
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+
+    // Check if OTP is expired
+    if (user.deleteAccountOTPExpire < Date.now()) {
+      return res.status(400).json({ message: 'OTP has expired' });
+    }
+
+    // Check if user has any active orders
+    const activeOrders = await Order.find({
+      user: req.user.id,
+      status: { $in: ['confirmed', 'rented'] }
+    });
+
+    if (activeOrders.length > 0) {
+      return res.status(400).json({ 
+        message: 'Cannot delete account with active orders. Please return all rented items first.' 
+      });
+    }
+
+    // Delete user's orders first
+    await Order.deleteMany({ user: req.user.id });
+    
+    // Delete the user
+    await User.findByIdAndDelete(req.user.id);
+
+    // Destroy session
+    req.session.destroy(() => {
+      res.clearCookie('connect.sid');
+      res.json({
+        success: true,
+        message: 'Account deleted successfully'
+      });
+    });
+  } catch (error) {
+    console.error('Verify account deletion OTP error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/auth/resend-delete-account-otp
+// @desc    Resend account deletion OTP
+// @access  Private
+router.post('/resend-delete-account-otp', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if user has any active orders
+    const activeOrders = await Order.find({
+      user: req.user.id,
+      status: { $in: ['confirmed', 'rented'] }
+    });
+
+    if (activeOrders.length > 0) {
+      return res.status(400).json({ 
+        message: 'Cannot delete account with active orders. Please return all rented items first.' 
+      });
+    }
+
+    // Generate new 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.deleteAccountOTP = otp;
+    user.deleteAccountOTPExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+    await user.save();
+
+    // Send new OTP via email
+    try {
+      await sendAccountDeletionOTP(user.email, user.name, otp);
+      res.json({ 
+        success: true,
+        message: 'New OTP sent to your email address' 
+      });
+    } catch (emailError) {
+      console.error('Failed to send new account deletion OTP:', emailError);
+      res.status(500).json({ message: 'Failed to send OTP. Please try again.' });
+    }
+  } catch (error) {
+    console.error('Resend account deletion OTP error:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

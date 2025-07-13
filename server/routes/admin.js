@@ -338,6 +338,51 @@ router.delete('/users/:id', async (req, res) => {
       });
     }
 
+    // Send account deletion notification email
+    try {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS
+        }
+      });
+
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: user.email,
+        subject: 'Account Deleted - Campus Connect',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #333;">Account Deletion Notification</h2>
+            <p>Hello ${user.name},</p>
+            <p>Your account has been deleted by an administrator from Campus Connect.</p>
+            <p><strong>Account Details:</strong></p>
+            <ul>
+              <li>Name: ${user.name}</li>
+              <li>Email: ${user.email}</li>
+              <li>Student ID: ${user.studentId}</li>
+              <li>Department: ${user.department || 'Not specified'}</li>
+            </ul>
+            <p><strong>What this means:</strong></p>
+            <ul>
+              <li>All your account data has been permanently removed</li>
+              <li>Your order history has been deleted</li>
+              <li>You will no longer be able to access the platform</li>
+              <li>If you believe this was done in error, please contact the administration</li>
+            </ul>
+            <p>If you have any questions or concerns, please contact the Campus Connect administration.</p>
+            <p>Best regards,<br>Campus Connect Team</p>
+          </div>
+        `
+      };
+
+      await transporter.sendMail(mailOptions);
+    } catch (emailError) {
+      console.error('Failed to send account deletion notification email:', emailError);
+      // Continue with deletion even if email fails
+    }
+
     // Delete user's orders first
     await Order.deleteMany({ user: req.params.id });
     

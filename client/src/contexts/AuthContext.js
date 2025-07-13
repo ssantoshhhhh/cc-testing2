@@ -296,6 +296,46 @@ export const AuthProvider = ({ children }) => {
     return `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8001'}/api/users/profile-picture/${userId}?t=${timestamp}`;
   };
 
+  // Send account deletion OTP
+  const sendDeleteAccountOTP = async () => {
+    try {
+      const res = await axios.post('/api/auth/send-delete-account-otp');
+      toast.success('OTP sent to your email address!');
+      return { success: true };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to send OTP';
+      toast.error(message);
+      return { success: false, message };
+    }
+  };
+
+  // Verify account deletion OTP
+  const verifyDeleteAccountOTP = async (otp) => {
+    try {
+      const res = await axios.post('/api/auth/verify-delete-account-otp', { otp });
+      dispatch({ type: 'LOGOUT' });
+      toast.success('Account deleted successfully!');
+      return { success: true };
+    } catch (error) {
+      const message = error.response?.data?.message || 'OTP verification failed';
+      toast.error(message);
+      return { success: false, message };
+    }
+  };
+
+  // Resend account deletion OTP
+  const resendDeleteAccountOTP = async () => {
+    try {
+      const res = await axios.post('/api/auth/resend-delete-account-otp');
+      toast.success('New OTP sent to your email address!');
+      return { success: true };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to resend OTP';
+      toast.error(message);
+      return { success: false, message };
+    }
+  };
+
   useEffect(() => {
     loadUser();
   }, [loadUser]);
@@ -317,6 +357,9 @@ export const AuthProvider = ({ children }) => {
         uploadProfilePicture,
         deleteProfilePicture,
         getProfilePictureUrl,
+        sendDeleteAccountOTP,
+        verifyDeleteAccountOTP,
+        resendDeleteAccountOTP,
       }}
     >
       {children}
