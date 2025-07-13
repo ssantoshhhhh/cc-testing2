@@ -8,7 +8,7 @@ import axios from '../axios';
 import ChatModal from '../components/ChatModal';
 
 const Chats = () => {
-  const { user } = useAuth();
+  const { user, getProfilePictureUrl } = useAuth();
   const [selectedChat, setSelectedChat] = useState(null);
   const [showChatModal, setShowChatModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -187,7 +187,18 @@ const Chats = () => {
                   <div className="p-4">
                     <div className="flex items-center space-x-3">
                       {/* User Avatar */}
-                      <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                      {otherUser.profilePicture ? (
+                        <img
+                          src={getProfilePictureUrl(otherUser._id)}
+                          alt={otherUser.name}
+                          className="w-12 h-12 rounded-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div className={`w-12 h-12 bg-green-100 rounded-full flex items-center justify-center ${otherUser.profilePicture ? 'hidden' : ''}`}>
                         <FiUser className="text-green-600" />
                       </div>
 

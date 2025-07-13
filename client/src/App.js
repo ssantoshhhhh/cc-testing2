@@ -23,6 +23,7 @@ import SellerDashboard from './pages/SellerDashboard';
 import BuyerDashboard from './pages/BuyerDashboard';
 import AddProduct from './pages/AddProduct';
 import Chats from './pages/Chats';
+import BuyRequests from './pages/BuyRequests';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard';
@@ -72,6 +73,11 @@ function App() {
           <Route path="/chats" element={
             <PrivateRoute>
               <Chats />
+            </PrivateRoute>
+          } />
+          <Route path="/buy-requests" element={
+            <PrivateRoute>
+              <BuyRequests />
             </PrivateRoute>
           } />
           

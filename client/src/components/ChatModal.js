@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import axios from '../axios';
 
 const ChatModal = ({ isOpen, onClose, product, sellerId, chatId: propChatId }) => {
-  const { user } = useAuth();
+  const { user, getProfilePictureUrl } = useAuth();
   const queryClient = useQueryClient();
   const [message, setMessage] = useState('');
   const [chatId, setChatId] = useState(propChatId || null);
@@ -201,6 +201,16 @@ const ChatModal = ({ isOpen, onClose, product, sellerId, chatId: propChatId }) =
     });
   };
 
+  // Get the other person's info (seller or buyer)
+  const getOtherPerson = () => {
+    if (chat) {
+      return chat.buyer._id === user?.id ? chat.seller : chat.buyer;
+    }
+    return product?.seller;
+  };
+
+  const otherPerson = getOtherPerson();
+
   if (!isOpen) return null;
 
   return (
@@ -209,12 +219,23 @@ const ChatModal = ({ isOpen, onClose, product, sellerId, chatId: propChatId }) =
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+            {otherPerson?.profilePicture ? (
+              <img
+                src={getProfilePictureUrl(otherPerson._id)}
+                alt={otherPerson.name}
+                className="w-10 h-10 rounded-full object-cover"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <div className={`w-10 h-10 bg-green-100 rounded-full flex items-center justify-center ${otherPerson?.profilePicture ? 'hidden' : ''}`}>
               <FiUser className="text-green-600" />
             </div>
             <div>
               <h3 className="font-semibold text-gray-900">
-                Chat with {product?.seller?.name || chat?.seller?.name || 'Seller'}
+                Chat with {otherPerson?.name || 'Seller'}
               </h3>
               <p className="text-sm text-gray-500">{product?.title || chat?.product?.title}</p>
             </div>
@@ -257,8 +278,26 @@ const ChatModal = ({ isOpen, onClose, product, sellerId, chatId: propChatId }) =
               return (
                 <div
                   key={index}
-                  className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
+                  className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} items-end space-x-2`}
                 >
+                  {!isOwnMessage && (
+                    <div className="flex-shrink-0">
+                      {msg.sender.profilePicture ? (
+                        <img
+                          src={getProfilePictureUrl(msg.sender._id)}
+                          alt={msg.sender.name}
+                          className="w-8 h-8 rounded-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div className={`w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center ${msg.sender.profilePicture ? 'hidden' : ''}`}>
+                        <FiUser className="text-gray-500 w-4 h-4" />
+                      </div>
+                    </div>
+                  )}
                   <div
                     className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
                       isOwnMessage
@@ -273,6 +312,24 @@ const ChatModal = ({ isOpen, onClose, product, sellerId, chatId: propChatId }) =
                       {formatTime(msg.timestamp)}
                     </p>
                   </div>
+                  {isOwnMessage && (
+                    <div className="flex-shrink-0">
+                      {user?.hasProfilePicture ? (
+                        <img
+                          src={getProfilePictureUrl(user.id)}
+                          alt={user.name}
+                          className="w-8 h-8 rounded-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div className={`w-8 h-8 bg-green-200 rounded-full flex items-center justify-center ${user?.hasProfilePicture ? 'hidden' : ''}`}>
+                        <FiUser className="text-green-600 w-4 h-4" />
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })

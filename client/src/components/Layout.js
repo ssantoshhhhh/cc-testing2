@@ -170,6 +170,14 @@ const Layout = ({ children }) => {
                         <FiMessageCircle className="inline mr-2" />
                         My Chats
                       </Link>
+                      <Link
+                        to="/buy-requests"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600"
+                        onClick={() => setIsProfileMenuOpen(false)}
+                      >
+                        <FaCog className="inline mr-2" />
+                        Buy Requests
+                      </Link>
                       {user?.role === 'admin' && (
                         <Link
                           to="/admin"

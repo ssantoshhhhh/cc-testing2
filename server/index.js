@@ -16,6 +16,7 @@ const adminRoutes = require('./routes/admin');
 const publicRoutes = require('./routes/public');
 const chatRoutes = require('./routes/chats');
 const transactionRoutes = require('./routes/transactions');
+const buyRequestRoutes = require('./routes/buyRequests');
 
 const app = express();
 
@@ -69,6 +70,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/transactions', transactionRoutes);
+app.use('/api/buy-requests', buyRequestRoutes);
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {

@@ -2,19 +2,21 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useAuth } from '../contexts/AuthContext';
-import { FiMessageCircle, FiStar, FiTruck, FiShield, FiRefreshCw, FiUser, FiPhone, FiMail, FiHeart } from 'react-icons/fi';
+import { FiMessageCircle, FiStar, FiTruck, FiShield, FiRefreshCw, FiUser, FiPhone, FiMail, FiHeart, FiDollarSign, FiMapPin, FiClock } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import axios from '../axios';
 import ChatModal from '../components/ChatModal';
+import BuyRequestModal from '../components/BuyRequestModal';
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, getProfilePictureUrl } = useAuth();
   const queryClient = useQueryClient();
   const [showContactModal, setShowContactModal] = useState(false);
   const [showMarkSoldModal, setShowMarkSoldModal] = useState(false);
+  const [showBuyRequestModal, setShowBuyRequestModal] = useState(false);
   const [selectedBuyer, setSelectedBuyer] = useState('');
   const [showChatModal, setShowChatModal] = useState(false);
 
@@ -83,6 +85,19 @@ const ProductDetail = () => {
       return;
     }
     setShowChatModal(true);
+  };
+
+  const handleBuyRequest = () => {
+    if (!user) {
+      toast.error('Please login to send buy request');
+      navigate('/login');
+      return;
+    }
+    if (user.id === product?.seller?._id) {
+      toast.error('You cannot buy your own product');
+      return;
+    }
+    setShowBuyRequestModal(true);
   };
 
   const handleMarkAsSold = () => {
@@ -289,12 +304,39 @@ const ProductDetail = () => {
 
               {/* Seller Information */}
               <div className="bg-green-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-gray-900 mb-3">Seller Information</h3>
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
+                <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+                  <FiUser className="mr-2 text-green-600" />
+                  Seller Information
+                </h3>
+                <div className="flex items-start space-x-3 mb-4">
+                  {product.seller?.profilePicture ? (
+                    <img
+                      src={getProfilePictureUrl(product.seller._id)}
+                      alt={product.seller.name}
+                      className="w-12 h-12 rounded-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <div className={`w-12 h-12 bg-green-100 rounded-full flex items-center justify-center ${product.seller?.profilePicture ? 'hidden' : ''}`}>
                     <FiUser className="text-green-600" />
-                    <span className="text-gray-700">{product.seller?.name || 'Anonymous'}</span>
                   </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900">{product.seller?.name || 'Anonymous'}</h4>
+                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <FiMapPin className="w-4 h-4" />
+                      <span>{product.location}</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <FiClock className="w-4 h-4" />
+                      <span>Member since {new Date(product.seller?.createdAt || Date.now()).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-2 text-sm">
                   {product.contactInfo?.phone && (
                     <div className="flex items-center space-x-2">
                       <FiPhone className="text-green-600" />
@@ -321,17 +363,24 @@ const ProductDetail = () => {
                 {!isSold && !isOwner && (
                   <>
                     <button
-                      onClick={handleStartChat}
+                      onClick={handleBuyRequest}
                       className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
+                    >
+                      <FiDollarSign />
+                      <span>Send Buy Request</span>
+                    </button>
+                    <button
+                      onClick={handleStartChat}
+                      className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
                     >
                       <FiMessageCircle />
                       <span>Start Chat</span>
                     </button>
                     <button
                       onClick={handleContactSeller}
-                      className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
+                      className="w-full bg-gray-600 text-white py-3 px-4 rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center space-x-2"
                     >
-                      <FiMessageCircle />
+                      <FiPhone />
                       <span>Contact Seller</span>
                     </button>
                   </>
@@ -443,6 +492,16 @@ const ProductDetail = () => {
             onClose={() => setShowChatModal(false)}
             product={product}
             sellerId={product?.seller?._id}
+          />
+        )}
+
+        {/* Buy Request Modal */}
+        {showBuyRequestModal && (
+          <BuyRequestModal
+            isOpen={showBuyRequestModal}
+            onClose={() => setShowBuyRequestModal(false)}
+            product={product}
+            seller={product?.seller}
           />
         )}
       </div>
