@@ -187,4 +187,44 @@ router.delete('/profile-picture', protect, async (req, res) => {
   }
 });
 
+// @route   GET /api/users/marketplace-stats
+// @desc    Get marketplace statistics for the logged-in user
+// @access  Private
+router.get('/marketplace-stats', protect, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const Product = require('../models/Product');
+    const Transaction = require('../models/Transaction');
+
+    // Total listings by user
+    const totalListings = await Product.countDocuments({ seller: userId });
+    // Active listings (not sold, available quantity > 0)
+    const activeListings = await Product.countDocuments({ seller: userId, isActive: true, availableQuantity: { $gt: 0 } });
+    // Total sales (products sold by user)
+    const totalSales = await Transaction.countDocuments({ seller: userId });
+    // Total purchases (products bought by user)
+    const totalPurchases = await Transaction.countDocuments({ buyer: userId });
+    // Seller rating (average of all ratings for this seller)
+    const user = await User.findById(userId);
+    const sellerRating = user?.sellerRating || 0;
+    // Total transactions (as buyer or seller)
+    const totalTransactions = await Transaction.countDocuments({ $or: [{ seller: userId }, { buyer: userId }] });
+
+    res.json({
+      success: true,
+      data: {
+        totalListings,
+        activeListings,
+        totalSales,
+        totalPurchases,
+        sellerRating,
+        totalTransactions
+      }
+    });
+  } catch (error) {
+    console.error('Error in /marketplace-stats:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router; 

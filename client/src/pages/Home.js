@@ -100,34 +100,6 @@ const Home = () => {
                   Learn More
                 </Link>
               </div>
-
-              {/* Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-8 w-full justify-center">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">
-                    {statsLoading ? '...' : `${statsData?.data?.totalUsers || 0}+`}
-                  </div>
-                <div className="text-sm text-gray-600">Active Students</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">
-                    {statsLoading ? '...' : `${statsData?.data?.totalProducts || 0}+`}
-                  </div>
-                <div className="text-sm text-gray-600">Items Listed</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">
-                    {statsLoading ? '...' : `${statsData?.data?.totalOrders || 0}+`}
-                  </div>
-                <div className="text-sm text-gray-600">Successful Sales</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">
-                    {statsLoading ? '...' : `${statsData?.data?.activeRentals || 0}+`}
-                  </div>
-                <div className="text-sm text-gray-600">Active Listings</div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
@@ -226,6 +198,46 @@ const Home = () => {
               <span className="font-medium text-gray-700">Clothing</span>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Statistics Section */}
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Campus Marketplace Statistics
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Discover key metrics about our campus marketplace.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-8 w-full justify-center">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">
+                    {statsLoading ? '...' : `${statsData?.data?.totalUsers || 0}+`}
+                  </div>
+                <div className="text-sm text-gray-600">Active Students</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">
+                    {statsLoading ? '...' : `${statsData?.data?.totalProducts || 0}+`}
+                  </div>
+                <div className="text-sm text-gray-600">Items Listed</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">
+                    {statsLoading ? '...' : `${statsData?.data?.totalOrders || 0}+`}
+                  </div>
+                <div className="text-sm text-gray-600">Successful Sales</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">
+                    {statsLoading ? '...' : `${statsData?.data?.activeRentals || 0}+`}
+                  </div>
+                <div className="text-sm text-gray-600">Active Listings</div>
+              </div>
+            </div>
         </div>
       </section>
 
