@@ -2,12 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../contexts/AuthContext';
-import { FaEye, FaEyeSlash, FaUser, FaEnvelope, FaLock, FaIdCard, FaPhone, FaGraduationCap } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaUser, FaEnvelope, FaLock, FaIdCard, FaPhone, FaGraduationCap, FaArrowLeft } from 'react-icons/fa';
 
 const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { register: registerUser, isAuthenticated } = useAuth();
+  const [step, setStep] = useState(1); // 1: Registration form, 2: OTP verification
+  const [userEmail, setUserEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [resendDisabled, setResendDisabled] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+  const { sendRegistrationOTP, verifyRegistrationOTP, resendRegistrationOTP, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -15,6 +21,17 @@ const Register = () => {
       navigate('/');
     }
   }, [isAuthenticated, navigate]);
+
+  // Countdown timer for resend button
+  useEffect(() => {
+    let timer;
+    if (countdown > 0) {
+      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    } else {
+      setResendDisabled(false);
+    }
+    return () => clearTimeout(timer);
+  }, [countdown]);
 
   const {
     register,
@@ -28,15 +45,63 @@ const Register = () => {
   const onSubmit = async (data) => {
     setIsLoading(true);
     try {
-      const result = await registerUser(data);
+      const result = await sendRegistrationOTP(data);
       if (result.success) {
-        navigate('/');
+        setUserEmail(result.email);
+        setStep(2);
+        setResendDisabled(true);
+        setCountdown(60); // 60 seconds countdown
       }
     } catch (error) {
       console.error('Registration error:', error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleOtpSubmit = async (e) => {
+    e.preventDefault();
+    if (!otp || otp.length !== 6) {
+      setOtpError('Please enter a valid 6-digit OTP');
+      return;
+    }
+
+    setIsLoading(true);
+    setOtpError('');
+
+    try {
+      const result = await verifyRegistrationOTP(userEmail, otp);
+      if (result.success) {
+        navigate('/');
+      }
+    } catch (error) {
+      console.error('OTP verification error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    setIsLoading(true);
+    try {
+      const result = await resendRegistrationOTP(userEmail);
+      if (result.success) {
+        setResendDisabled(true);
+        setCountdown(60);
+      }
+    } catch (error) {
+      console.error('Resend OTP error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBackToForm = () => {
+    setStep(1);
+    setOtp('');
+    setOtpError('');
+    setResendDisabled(false);
+    setCountdown(0);
   };
 
   const departments = [
@@ -52,6 +117,109 @@ const Register = () => {
     'Other'
   ];
 
+  // OTP Verification Step
+  if (step === 2) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="flex justify-center">
+            <img src="/logo.jpg" alt="Logo" className="w-12 h-12 object-contain rounded-lg" />
+          </div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Verify Your Email
+          </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            We've sent a 6-digit OTP to <strong>{userEmail}</strong>
+          </p>
+        </div>
+
+        <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="bg-white py-8 px-4 shadow-soft sm:rounded-lg sm:px-10">
+            <form onSubmit={handleOtpSubmit} className="space-y-6">
+              {/* OTP Input */}
+              <div>
+                <label htmlFor="otp" className="block text-sm font-medium text-gray-700">
+                  Enter OTP
+                </label>
+                <div className="mt-1">
+                  <input
+                    id="otp"
+                    type="text"
+                    value={otp}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                      setOtp(value);
+                      if (otpError) setOtpError('');
+                    }}
+                    className={`input-field text-center text-2xl tracking-widest ${
+                      otpError ? 'border-red-500 focus:ring-red-500' : ''
+                    }`}
+                    placeholder="000000"
+                    maxLength={6}
+                    autoComplete="off"
+                  />
+                </div>
+                {otpError && (
+                  <p className="mt-1 text-sm text-red-600">{otpError}</p>
+                )}
+              </div>
+
+              {/* Submit Button */}
+              <div>
+                <button
+                  type="submit"
+                  disabled={isLoading || !otp || otp.length !== 6}
+                  className="w-full btn-primary py-3 text-base font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? (
+                    <div className="flex items-center justify-center">
+                      <div className="spinner mr-2"></div>
+                      Verifying...
+                    </div>
+                  ) : (
+                    'Verify OTP'
+                  )}
+                </button>
+              </div>
+
+              {/* Resend OTP */}
+              <div className="text-center">
+                <p className="text-sm text-gray-600">
+                  Didn't receive the OTP?{' '}
+                  <button
+                    type="button"
+                    onClick={handleResendOTP}
+                    disabled={resendDisabled || isLoading}
+                    className="text-green-600 hover:text-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {resendDisabled 
+                      ? `Resend in ${countdown}s` 
+                      : 'Resend OTP'
+                    }
+                  </button>
+                </p>
+              </div>
+
+              {/* Back to Form */}
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={handleBackToForm}
+                  disabled={isLoading}
+                  className="text-gray-600 hover:text-gray-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mx-auto"
+                >
+                  <FaArrowLeft className="mr-2" />
+                  Back to Registration Form
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Registration Form Step
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -289,10 +457,10 @@ const Register = () => {
                 {isLoading ? (
                   <div className="flex items-center justify-center">
                     <div className="spinner mr-2"></div>
-                    Creating account...
+                    Sending OTP...
                   </div>
                 ) : (
-                  'Create account'
+                  'Send Verification OTP'
                 )}
               </button>
             </div>

@@ -42,9 +42,27 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: false
   },
+  // Profile picture field
+  profilePicture: {
+    data: {
+      type: Buffer,
+      default: null
+    },
+    contentType: {
+      type: String,
+      default: null
+    }
+  },
   isActive: {
     type: Boolean,
     default: true
+  },
+  // Registration OTP fields
+  registrationOTP: String,
+  registrationOTPExpire: Date,
+  isEmailVerified: {
+    type: Boolean,
+    default: false
   },
   // Persistent cart for logged-in users
   cart: [

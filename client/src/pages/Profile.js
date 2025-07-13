@@ -7,11 +7,13 @@ import axios from '../axios'; // use the custom axios instance
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 import useOrderNotifications from '../hooks/useOrderNotifications';
+import ProfilePictureUpload from '../components/ProfilePictureUpload';
 
 const Profile = () => {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, getProfilePictureUrl } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const previousOrdersRef = useRef([]);
   
   const {
@@ -108,20 +110,80 @@ const Profile = () => {
     reset();
   };
 
+  const handleProfilePictureUpload = () => {
+    // Refresh user data after upload
+    // The AuthContext will automatically update the user state
+  };
+
+  // Get profile picture URL
+  const profilePictureUrl = user?.hasProfilePicture ? getProfilePictureUrl(user.id) : null;
+
+  // Handle profile picture click
+  const handleProfilePictureClick = () => {
+    if (profilePictureUrl) {
+      setShowProfileModal(true);
+    }
+  };
+
+  // Handle modal close
+  const handleCloseModal = () => {
+    setShowProfileModal(false);
+  };
+
+  // Handle modal backdrop click
+  const handleModalBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      setShowProfileModal(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
 
       {/* Audio elements for notifications */}
       <audio ref={confirmedAudioRef} src="/confimed.mp3" preload="auto" />
       <audio ref={rejectedAudioRef} src="/rejected.mp3" preload="auto" />
+      
+      {/* Profile Picture Modal */}
+      {showProfileModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
+          onClick={handleModalBackdropClick}
+        >
+          <div className="relative max-w-2xl max-h-full mx-4">
+            <button
+              onClick={handleCloseModal}
+              className="absolute -top-4 -right-4 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-100 transition-colors duration-200 z-10"
+            >
+              <FiX className="w-5 h-5 text-gray-600" />
+            </button>
+            <img
+              src={profilePictureUrl}
+              alt="Profile"
+              className="w-full h-auto max-h-[80vh] object-contain rounded-lg shadow-2xl"
+            />
+          </div>
+        </div>
+      )}
+
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           {/* Header */}
           <div className="bg-green-600 px-6 py-8">
             <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center">
-                <FiUser className="w-8 h-8 text-green-600" />
-              </div>
+              {profilePictureUrl ? (
+                <img
+                  src={profilePictureUrl}
+                  alt="Profile"
+                  className="w-16 h-16 rounded-full object-cover border-4 border-white shadow-lg cursor-pointer hover:opacity-90 transition-opacity duration-200"
+                  onClick={handleProfilePictureClick}
+                  title="Click to view larger"
+                />
+              ) : (
+                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center">
+                  <FiUser className="w-8 h-8 text-green-600" />
+                </div>
+              )}
               <div>
                 <h1 className="text-2xl font-bold text-white">{user?.name}</h1>
                 <p className="text-green-100">{user?.email}</p>
@@ -142,6 +204,14 @@ const Profile = () => {
                 </button>
               )}
             </div>
+
+            {/* Profile Picture Section - Only show when editing */}
+            {isEditing && (
+              <div className="mb-8">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Profile Picture</h3>
+                <ProfilePictureUpload onUploadSuccess={handleProfilePictureUpload} />
+              </div>
+            )}
 
             <form onSubmit={handleSubmit(handleUpdateProfile)} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -63,9 +63,14 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await axios.get('/api/auth/me');
       if (res.data.success && res.data.user) {
+        // Ensure hasProfilePicture is included in user data
+        const userData = {
+          ...res.data.user,
+          hasProfilePicture: res.data.user.hasProfilePicture || false
+        };
         dispatch({
           type: 'USER_LOADED',
-          payload: res.data.user,
+          payload: userData,
         });
       } else {
         dispatch({ type: 'AUTH_ERROR' });
@@ -75,10 +80,57 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // Register user
+  // Send registration OTP
+  const sendRegistrationOTP = async (formData) => {
+    try {
+      const res = await axios.post('/api/auth/send-registration-otp', formData);
+      toast.success('OTP sent to your email address!');
+      return { success: true, email: res.data.email };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to send OTP';
+      toast.error(message);
+      return { success: false, message };
+    }
+  };
+
+  // Verify registration OTP
+  const verifyRegistrationOTP = async (email, otp) => {
+    try {
+      const res = await axios.post('/api/auth/verify-registration-otp', { email, otp });
+      dispatch({
+        type: 'LOGIN_SUCCESS',
+        payload: res.data,
+      });
+      toast.success('Registration successful!');
+      return { success: true };
+    } catch (error) {
+      const message = error.response?.data?.message || 'OTP verification failed';
+      toast.error(message);
+      return { success: false, message };
+    }
+  };
+
+  // Resend registration OTP
+  const resendRegistrationOTP = async (email) => {
+    try {
+      await axios.post('/api/auth/resend-registration-otp', { email });
+      toast.success('New OTP sent to your email address!');
+      return { success: true };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to resend OTP';
+      toast.error(message);
+      return { success: false, message };
+    }
+  };
+
+  // Register user (legacy method - now redirects to OTP flow)
   const register = async (formData) => {
     try {
       const res = await axios.post('/api/auth/register', formData);
+      if (res.data.requiresOTP) {
+        // Redirect to OTP flow
+        return { success: false, requiresOTP: true, message: res.data.message };
+      }
       dispatch({
         type: 'LOGIN_SUCCESS',
         payload: res.data,
@@ -97,9 +149,14 @@ export const AuthProvider = ({ children }) => {
   const login = async (formData) => {
     try {
       const res = await axios.post('/api/auth/login', formData);
+      // Ensure hasProfilePicture is included in user data
+      const userData = {
+        ...res.data.user,
+        hasProfilePicture: res.data.user.hasProfilePicture || false
+      };
       dispatch({
         type: 'LOGIN_SUCCESS',
-        payload: res.data,
+        payload: { ...res.data, user: userData },
       });
       toast.success('Login successful!');
       return { success: true };
@@ -154,9 +211,14 @@ export const AuthProvider = ({ children }) => {
   const updateProfile = async (formData) => {
     try {
       const res = await axios.put('/api/users/profile', formData);
+      // Ensure hasProfilePicture is preserved
+      const userData = {
+        ...res.data,
+        hasProfilePicture: res.data.hasProfilePicture || state.user?.hasProfilePicture || false
+      };
       dispatch({
         type: 'UPDATE_USER',
-        payload: res.data,
+        payload: userData,
       });
       toast.success('Profile updated successfully!');
       return { success: true };
@@ -174,6 +236,66 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Upload profile picture
+  const uploadProfilePicture = async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('profilePicture', file);
+
+      const res = await axios.post('/api/users/upload-profile-picture', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      // Ensure hasProfilePicture is set to true after upload
+      const userData = {
+        ...res.data.user,
+        hasProfilePicture: true
+      };
+
+      dispatch({
+        type: 'UPDATE_USER',
+        payload: userData,
+      });
+      toast.success('Profile picture uploaded successfully!');
+      return { success: true };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Profile picture upload failed';
+      toast.error(message);
+      return { success: false, message };
+    }
+  };
+
+  // Delete profile picture
+  const deleteProfilePicture = async () => {
+    try {
+      const res = await axios.delete('/api/users/profile-picture');
+      // Ensure hasProfilePicture is set to false after deletion
+      const userData = {
+        ...res.data.user,
+        hasProfilePicture: false
+      };
+
+      dispatch({
+        type: 'UPDATE_USER',
+        payload: userData,
+      });
+      toast.success('Profile picture deleted successfully!');
+      return { success: true };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Profile picture deletion failed';
+      toast.error(message);
+      return { success: false, message };
+    }
+  };
+
+  // Get profile picture URL
+  const getProfilePictureUrl = (userId) => {
+    const timestamp = Date.now(); // Cache busting
+    return `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8001'}/api/users/profile-picture/${userId}?t=${timestamp}`;
+  };
+
   useEffect(() => {
     loadUser();
   }, [loadUser]);
@@ -189,6 +311,12 @@ export const AuthProvider = ({ children }) => {
         forgotPassword,
         resetPassword,
         updateProfile,
+        sendRegistrationOTP,
+        verifyRegistrationOTP,
+        resendRegistrationOTP,
+        uploadProfilePicture,
+        deleteProfilePicture,
+        getProfilePictureUrl,
       }}
     >
       {children}

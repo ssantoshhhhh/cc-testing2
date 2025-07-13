@@ -36,10 +36,46 @@ const sendWelcomeEmailNodemailer = async (userEmail, userName) => {
   await transporter.sendMail(mailOptions);
 };
 
-// @route   POST /api/auth/register
-// @desc    Register user
+// Send registration OTP email
+const sendRegistrationOTP = async (userEmail, userName, otp) => {
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    }
+  });
+
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: userEmail,
+    subject: 'Email Verification OTP - Campus Connect',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">Email Verification</h2>
+        <p>Hello ${userName},</p>
+        <p>Thank you for registering with Campus Connect! Please use the following OTP to verify your email address:</p>
+        <div style="background-color: #f4f4f4; padding: 20px; text-align: center; margin: 20px 0;">
+          <h1 style="color: #28a745; font-size: 32px; margin: 0; letter-spacing: 5px;">${otp}</h1>
+        </div>
+        <p><strong>Important:</strong></p>
+        <ul>
+          <li>This OTP is valid for 10 minutes only</li>
+          <li>Do not share this OTP with anyone</li>
+          <li>If you didn't register for this account, please ignore this email</li>
+        </ul>
+        <p>Best regards,<br>Campus Connect Team</p>
+      </div>
+    `
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
+// @route   POST /api/auth/send-registration-otp
+// @desc    Send OTP for registration
 // @access  Public
-router.post('/register', [
+router.post('/send-registration-otp', [
   body('name').notEmpty().withMessage('Name is required'),
   body('email').isEmail().withMessage('Please enter a valid email'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
@@ -61,29 +97,96 @@ router.post('/register', [
       return res.status(400).json({ message: 'User already exists with this email or student ID' });
     }
 
-    // Create user
-    const user = await User.create({
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Create temporary user with OTP
+    const tempUser = new User({
       name,
       email,
       password,
       studentId,
       phone,
-      department
+      department,
+      registrationOTP: otp,
+      registrationOTPExpire: Date.now() + 10 * 60 * 1000, // 10 minutes
+      isEmailVerified: false
     });
 
-    // Send welcome email (Nodemailer)
+    await tempUser.save();
+
+    // Send OTP via email
+    try {
+      await sendRegistrationOTP(email, name, otp);
+      res.json({ 
+        success: true,
+        message: 'OTP sent to your email address',
+        email: email
+      });
+    } catch (emailError) {
+      // If email fails, delete the temporary user
+      await User.findByIdAndDelete(tempUser._id);
+      console.error('Failed to send registration OTP:', emailError);
+      res.status(500).json({ message: 'Failed to send OTP. Please try again.' });
+    }
+  } catch (error) {
+    console.error('Send registration OTP error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/auth/verify-registration-otp
+// @desc    Verify OTP and complete registration
+// @access  Public
+router.post('/verify-registration-otp', [
+  body('email').isEmail().withMessage('Please enter a valid email'),
+  body('otp').isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { email, otp } = req.body;
+
+    // Find user by email
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if OTP exists and is valid
+    if (!user.registrationOTP || user.registrationOTP !== otp) {
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+
+    // Check if OTP is expired
+    if (user.registrationOTPExpire < Date.now()) {
+      return res.status(400).json({ message: 'OTP has expired' });
+    }
+
+    // Mark user as verified and clear OTP
+    user.isEmailVerified = true;
+    user.registrationOTP = undefined;
+    user.registrationOTPExpire = undefined;
+    await user.save();
+
+    // Send welcome email
     try {
       await sendWelcomeEmailNodemailer(user.email, user.name);
       console.log('Welcome email sent to:', user.email);
     } catch (emailError) {
       console.error('Failed to send welcome email:', emailError);
-      // Don't fail the registration if email fails
+      // Don't fail the registration if welcome email fails
     }
 
     // Set session
     req.session.userId = user._id;
     res.status(201).json({
       success: true,
+      message: 'Registration completed successfully!',
       user: {
         id: user._id,
         name: user.name,
@@ -93,13 +196,80 @@ router.post('/register', [
         department: user.department,
         phone: user.phone,
         address: user.address,
+        hasProfilePicture: !!user.profilePicture?.data,
         createdAt: user.createdAt
       }
     });
   } catch (error) {
-    console.error(error);
+    console.error('Verify registration OTP error:', error);
     res.status(500).json({ message: 'Server error' });
   }
+});
+
+// @route   POST /api/auth/resend-registration-otp
+// @desc    Resend registration OTP
+// @access  Public
+router.post('/resend-registration-otp', [
+  body('email').isEmail().withMessage('Please enter a valid email')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if user is already verified
+    if (user.isEmailVerified) {
+      return res.status(400).json({ message: 'User is already verified' });
+    }
+
+    // Generate new 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.registrationOTP = otp;
+    user.registrationOTPExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+    await user.save();
+
+    // Send new OTP via email
+    try {
+      await sendRegistrationOTP(email, user.name, otp);
+      res.json({ 
+        success: true,
+        message: 'New OTP sent to your email address' 
+      });
+    } catch (emailError) {
+      console.error('Failed to send new registration OTP:', emailError);
+      res.status(500).json({ message: 'Failed to send OTP. Please try again.' });
+    }
+  } catch (error) {
+    console.error('Resend registration OTP error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/auth/register
+// @desc    Register user (legacy endpoint - now redirects to OTP flow)
+// @access  Public
+router.post('/register', [
+  body('name').notEmpty().withMessage('Name is required'),
+  body('email').isEmail().withMessage('Please enter a valid email'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('studentId').notEmpty().withMessage('Student ID is required'),
+  body('phone').notEmpty().withMessage('Phone number is required'),
+  body('department').notEmpty().withMessage('Department is required')
+], async (req, res) => {
+  // Redirect to OTP flow
+  return res.status(400).json({ 
+    message: 'Please use the new registration flow with OTP verification',
+    requiresOTP: true
+  });
 });
 
 // @route   POST /api/auth/login
@@ -154,6 +324,7 @@ router.post('/login', [
         department: user.department,
         phone: user.phone,
         address: user.address,
+        hasProfilePicture: !!user.profilePicture?.data,
         createdAt: user.createdAt
       }
     });
@@ -408,6 +579,7 @@ router.get('/me', protect, async (req, res) => {
         department: user.department,
         phone: user.phone,
         address: user.address,
+        hasProfilePicture: !!user.profilePicture?.data,
         createdAt: user.createdAt
       }
     });

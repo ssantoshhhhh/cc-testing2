@@ -13,7 +13,7 @@ import {
 } from 'react-icons/fa';
 
 const Layout = ({ children }) => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, getProfilePictureUrl } = useAuth();
   const { getCartItemCount } = useCart();
   const location = useLocation();
   const navigate = useNavigate();
@@ -48,6 +48,9 @@ const Layout = ({ children }) => {
     }
     return location.pathname.startsWith(path);
   };
+
+  // Get profile picture URL
+  const profilePictureUrl = user?.hasProfilePicture ? getProfilePictureUrl(user.id) : null;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -133,7 +136,17 @@ const Layout = ({ children }) => {
                     onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                     className="flex items-center space-x-2 p-2 rounded-md text-gray-700 hover:text-green-600 hover:bg-green-50 transition-colors duration-200"
                   >
-                    <FaUser size={18} />
+                    {profilePictureUrl ? (
+                      <img
+                        src={profilePictureUrl}
+                        alt="Profile"
+                        className="w-8 h-8 rounded-full object-cover border-2 border-gray-200"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                        <FaUser size={14} className="text-gray-600" />
+                      </div>
+                    )}
                     <span className="hidden sm:block text-sm font-medium">
                       {user?.name?.split(' ')[0]}
                     </span>
