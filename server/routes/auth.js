@@ -6,6 +6,8 @@ const nodemailer = require('nodemailer');
 // Remove EmailJS import
 const User = require('../models/User');
 const Product = require('../models/Product');
+const BuyRequest = require('../models/BuyRequest');
+const Transaction = require('../models/Transaction');
 const { protect } = require('../middleware/auth');
 
 const router = express.Router();
@@ -668,15 +670,31 @@ router.post('/verify-delete-account-otp', [
       return res.status(400).json({ message: 'OTP has expired' });
     }
 
-    // Check if user has any active orders
-    const activeOrders = await Order.find({
-      user: req.user.id,
-      status: { $in: ['confirmed', 'rented'] }
+    // Check if user has any active buy requests
+    const activeBuyRequests = await BuyRequest.find({
+      $or: [
+        { buyer: req.user.id, status: { $in: ['pending', 'accepted'] } },
+        { seller: req.user.id, status: { $in: ['pending', 'accepted'] } }
+      ]
     });
 
-    if (activeOrders.length > 0) {
+    if (activeBuyRequests.length > 0) {
       return res.status(400).json({ 
-        message: 'Cannot delete account with active orders. Please return all rented items first.' 
+        message: 'Cannot delete account with active buy requests. Please complete or cancel all pending requests first.' 
+      });
+    }
+
+    // Check if user has any active transactions
+    const activeTransactions = await Transaction.find({
+      $or: [
+        { buyer: req.user.id, status: { $in: ['pending', 'completed'] } },
+        { seller: req.user.id, status: { $in: ['pending', 'completed'] } }
+      ]
+    });
+
+    if (activeTransactions.length > 0) {
+      return res.status(400).json({ 
+        message: 'Cannot delete account with active transactions. Please complete all pending transactions first.' 
       });
     }
 
